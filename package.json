@@ -1,0 +1,19 @@
+{
+  "name": "tradeos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TradeOS — Indian market option-chain terminal (monorepo root)",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "frontend": "pnpm --filter @tradeos/frontend",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+  }
+}

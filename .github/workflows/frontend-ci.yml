@@ -1,0 +1,27 @@
+name: frontend-ci
+
+on:
+  push:
+    branches: [main]
+    paths: ['frontend/**', 'package.json', 'pnpm-workspace.yaml', '.github/workflows/frontend-ci.yml']
+  pull_request:
+    paths: ['frontend/**', 'package.json', 'pnpm-workspace.yaml', '.github/workflows/frontend-ci.yml']
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tradeos/frontend typecheck
+      - run: pnpm --filter @tradeos/frontend lint
+      - run: pnpm --filter @tradeos/frontend test
+      - run: pnpm --filter @tradeos/frontend build
