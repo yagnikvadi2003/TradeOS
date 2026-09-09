@@ -1,6 +1,6 @@
 {
   "name": "@tradeos/frontend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,6 +18,8 @@
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-slot": "^1.3.3",
     "@tanstack/react-query": "^5.102.8",
+    "ag-grid-community": "^36.1.0",
+    "ag-grid-react": "^36.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

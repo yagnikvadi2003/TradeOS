@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { createTestClient, renderApp } from '@/tests/utils/render';
 
@@ -41,15 +42,34 @@ describe('application routes', () => {
     expect(await screen.findByTestId('price-chart')).toBeInTheDocument();
   });
 
-  it('marks the option-chain screen as private (noindex) and shows the placeholder', async () => {
+  it('renders the option-chain screen (private, noindex) with toolbar and grid', async () => {
     renderApp('/markets/nse/benchmark/nifty-50/option-chain');
-    expect(await screen.findByText(/coming in the next phase/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('option-chain-grid')).toBeInTheDocument();
+    expect(screen.getByTestId('option-chain-toolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('expiry-selector')).toBeInTheDocument();
+    expect(screen.getAllByRole('radio').length).toBeGreaterThan(1);
+    expect(screen.getByTestId('atm-indicator')).toBeInTheDocument();
+    expect(screen.getByTestId('data-freshness')).toBeInTheDocument();
+    expect(screen.getByTestId('option-chain-grid')).toHaveAttribute('data-rows', '21');
+    expect(document.title).toBe('NIFTY 50 Option chain · TradeOS');
     await waitFor(() =>
       expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
         'noindex,nofollow',
       ),
     );
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
+  });
+
+  it('switches expiry from the selector without a full reload', async () => {
+    const user = userEvent.setup();
+    renderApp('/markets/bse/benchmark/sensex/option-chain');
+    await screen.findByTestId('option-chain-grid');
+    const radios = screen.getAllByRole('radio');
+    await user.click(radios[1]!);
+    await waitFor(() => expect(radios[1]).toHaveAttribute('aria-checked', 'true'));
+    expect(screen.getByTestId('option-chain-grid').getAttribute('aria-label')).toContain(
+      radios[1]!.getAttribute('data-expiry')!,
+    );
   });
 
   it('refuses an option-chain URL for INDIA VIX', async () => {

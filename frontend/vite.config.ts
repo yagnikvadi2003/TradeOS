@@ -20,10 +20,13 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
+    // AG Grid is a single large, lazily loaded chunk; that is expected.
+    chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
         manualChunks: {
           charts: ['lightweight-charts'],
+          grid: ['ag-grid-community', 'ag-grid-react'],
           vendor: ['react', 'react-dom', 'react-router', '@tanstack/react-query', 'zustand'],
         },
       },

@@ -2,6 +2,31 @@
 
 All notable changes to TradeOS are documented here. The format follows Keep a Changelog.
 
+## [0.2.0] — Phase 2
+
+### Added
+
+- `backend/` workspace: NestJS 11, Zod-validated environment, URL-versioned REST (`/api/v1`),
+  Helmet, strict CORS, rate limiting, structured Pino logging with credential redaction, single
+  error contract, OpenAPI at `/api/docs`, `/health`, `/health/live`, `/health/ready`.
+- Prisma 7 schema and initial migration: `instruments`, `expiries`, `option_instruments`,
+  `provider_instrument_mappings` with unique constraints, cascading foreign keys and indexes.
+  No realtime ticks are stored. Idempotent seed for the six-index catalog.
+- Provider-independent `MarketDataProvider` port with boundary re-validation, and a deterministic
+  mock adapter (expiry calendars, strike ladders, Black–Scholes-consistent quotes, Greeks) that is
+  refused in production.
+- Option-chain module: repository port (Prisma + in-memory), service with metadata TTL, in-flight
+  coalescing and 2 s snapshot cache, assembler (ATM, steps-from-ATM, intrinsic/extrinsic, totals,
+  PCR), v1 DTOs/mappers, `GET /option-chain/:instrument`, `/expiries`, `/snapshot`.
+- Frontend option-chain screen: expiry selector (radiogroup, keyboard), toolbar (strike window,
+  column preset, refresh), ATM indicator, market status, data-freshness and connection-status
+  signals, and an AG Grid configured for high-frequency data (stable row ids, diffed transactions,
+  cell change flash, memoised columns, lazily loaded chunk).
+- Normalized frontend option-chain types and Zod-validated v1 HTTP client; mock client twin.
+- Backend CI workflow that applies the migration to PostgreSQL and checks schema drift.
+- Tests across service, DTO validation, repositories, API (Supertest), grid transaction contract,
+  expiry selector, rows/diff, store, and route rendering.
+
 ## [0.1.0] — Phase 1
 
 ### Added

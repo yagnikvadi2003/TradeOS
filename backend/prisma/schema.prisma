@@ -1,0 +1,142 @@
+// TradeOS durable application schema.
+//
+// PostgreSQL holds reference/metadata only: instruments, option contracts,
+// expiries and (later) users, watchlists, alerts. Realtime market data never
+// lands here — it lives in the realtime state layer (Redis / in-memory).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
+  runtime  = "nodejs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ExchangeCode {
+  NSE
+  BSE
+}
+
+enum InstrumentSegment {
+  INDEX
+  OPTION
+}
+
+enum InstrumentKind {
+  EQUITY_INDEX
+  VOLATILITY_INDEX
+}
+
+enum OptionType {
+  CE
+  PE
+}
+
+enum ExpiryCycle {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+/// An underlying index instrument. `instrumentKey` is the TradeOS-owned,
+/// provider-agnostic identifier (`NSE:INDEX:NIFTY50`). Provider symbols are
+/// mapped in `ProviderInstrumentMapping` so the domain never sees them.
+model Instrument {
+  id             String            @id @default(uuid()) @db.Uuid
+  instrumentKey  String            @unique @db.VarChar(64)
+  symbol         String            @db.VarChar(32)
+  name           String            @db.VarChar(128)
+  exchangeCode   ExchangeCode
+  segment        InstrumentSegment @default(INDEX)
+  kind           InstrumentKind
+  currency       String            @default("INR") @db.Char(3)
+  tickSize       Decimal           @db.Decimal(12, 6)
+  lotSize        Int?
+  /// Strike step used to derive ATM and grid spacing (e.g. 50 for NIFTY 50).
+  strikeStep     Decimal?          @db.Decimal(12, 4)
+  hasOptionChain Boolean           @default(false)
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(3)
+
+  expiries        Expiry[]
+  optionContracts OptionInstrument[]
+  providerMappings ProviderInstrumentMapping[]
+
+  @@unique([exchangeCode, symbol])
+  @@index([exchangeCode, kind])
+  @@index([hasOptionChain, isActive])
+  @@map("instruments")
+}
+
+/// A listed expiry for an underlying. One row per (underlying, date).
+model Expiry {
+  id            String      @id @default(uuid()) @db.Uuid
+  instrumentId  String      @db.Uuid
+  /// Calendar date of expiry in the exchange timezone (IST). Date only.
+  expiryDate    DateTime    @db.Date
+  cycle         ExpiryCycle
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(3)
+
+  instrument Instrument         @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  contracts  OptionInstrument[]
+
+  @@unique([instrumentId, expiryDate])
+  @@index([instrumentId, isActive, expiryDate])
+  @@map("expiries")
+}
+
+/// One option contract (a single CE or PE at a strike for an expiry).
+/// Static metadata only; quotes/OI/IV are realtime and never stored here.
+model OptionInstrument {
+  id            String     @id @default(uuid()) @db.Uuid
+  /// `NSE:OPT:NIFTY50:2026-09-16:24000:CE`
+  contractKey   String     @unique @db.VarChar(96)
+  instrumentId  String     @db.Uuid
+  expiryId      String     @db.Uuid
+  exchangeCode  ExchangeCode
+  tradingSymbol String     @db.VarChar(64)
+  strike        Decimal    @db.Decimal(14, 4)
+  optionType    OptionType
+  lotSize       Int
+  tickSize      Decimal    @db.Decimal(12, 6)
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime   @updatedAt @db.Timestamptz(3)
+
+  instrument Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  expiry     Expiry     @relation(fields: [expiryId], references: [id], onDelete: Cascade)
+  providerMappings ProviderInstrumentMapping[]
+
+  @@unique([expiryId, strike, optionType])
+  @@index([instrumentId, expiryId])
+  @@index([exchangeCode, tradingSymbol])
+  @@map("option_instruments")
+}
+
+/// Maps a TradeOS instrument or option contract to a provider's own symbol
+/// (Upstox instrument key, etc.). Populated by the provider adapter's
+/// instrument-master sync; keeps provider identifiers out of the domain.
+model ProviderInstrumentMapping {
+  id                 String   @id @default(uuid()) @db.Uuid
+  provider           String   @db.VarChar(32)
+  providerSymbol     String   @db.VarChar(128)
+  instrumentId       String?  @db.Uuid
+  optionInstrumentId String?  @db.Uuid
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+
+  instrument       Instrument?       @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  optionInstrument OptionInstrument? @relation(fields: [optionInstrumentId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSymbol])
+  @@unique([provider, instrumentId])
+  @@unique([provider, optionInstrumentId])
+  @@map("provider_instrument_mappings")
+}

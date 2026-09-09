@@ -212,3 +212,51 @@
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
 }
+
+/*
+ * Option-chain grid. Moneyness is encoded as a tint, not a border, so the
+ * eye reads the ITM band as one shape. ATM is the only accent on the grid.
+ */
+.oc-grid .ag-header-group-cell-label {
+  justify-content: center;
+}
+.oc-grid .oc-group-ce .ag-header-group-text {
+  color: var(--up);
+}
+.oc-grid .oc-group-pe .ag-header-group-text {
+  color: var(--down);
+}
+.oc-grid .oc-strike-header .ag-header-cell-label {
+  justify-content: center;
+}
+.oc-grid .oc-itm {
+  background-color: color-mix(in srgb, var(--info) 9%, transparent);
+}
+.oc-grid .oc-up {
+  color: var(--up);
+}
+.oc-grid .oc-down {
+  color: var(--down);
+}
+.oc-grid .oc-ltp {
+  color: var(--ink);
+  font-weight: 500;
+}
+.oc-grid .oc-strike {
+  justify-content: center;
+  background-color: var(--surface-sunken);
+  color: var(--ink);
+  font-weight: 500;
+  border-left: 1px solid var(--line-strong);
+  border-right: 1px solid var(--line-strong);
+}
+.oc-grid .oc-strike-atm {
+  color: var(--accent);
+}
+.oc-grid .oc-row-atm .ag-cell {
+  border-top: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.oc-grid .ag-root-wrapper {
+  border: 0;
+}

@@ -6,7 +6,14 @@ import {
 } from '@/features/charts/domain';
 import { marketCatalog } from '@/features/market/config';
 import { type IndexQuote, type InstrumentKey } from '@/features/market/domain';
+import {
+  type Expiry,
+  type IsoDate,
+  type OptionChainMetadata,
+  type OptionChainSnapshot,
+} from '@/features/option-chain/domain';
 import { type MarketDataClient } from './market-data.client';
+import { SIM_CONFIG, simulateExpiries, simulateSnapshot } from './option-chain.simulator';
 
 /**
  * Deterministic simulated market data for development and tests ONLY.
@@ -59,6 +66,8 @@ export interface MockMarketDataOptions {
   readonly quoteBucketMs?: number;
   /** When set, every call rejects — used to exercise error states. */
   readonly failWith?: Error;
+  /** Strikes generated on each side of the anchor for option chains. */
+  readonly strikesEachSide?: number;
 }
 
 export class MockMarketDataClient implements MarketDataClient {
@@ -67,12 +76,14 @@ export class MockMarketDataClient implements MarketDataClient {
   private readonly latencyMs: number;
   private readonly quoteBucketMs: number;
   private readonly failWith: Error | undefined;
+  private readonly strikesEachSide: number;
 
   constructor(options: MockMarketDataOptions = {}) {
     this.now = options.now ?? (() => Date.now());
     this.latencyMs = options.latencyMs ?? 120;
     this.quoteBucketMs = options.quoteBucketMs ?? 15_000;
     this.failWith = options.failWith;
+    this.strikesEachSide = options.strikesEachSide ?? 40;
   }
 
   private async delay(signal?: AbortSignal): Promise<void> {
@@ -174,5 +185,53 @@ export class MockMarketDataClient implements MarketDataClient {
     await this.delay(signal);
     const count = interval === '1d' ? 180 : 240;
     return { instrumentKey: key, interval, candles: this.buildCandles(key, interval, count) };
+  }
+
+  private assertOptionChain(key: InstrumentKey): void {
+    const index = marketCatalog.indexByInstrumentKey(key);
+    if (!index?.capabilities.hasOptionChain || !SIM_CONFIG[key]) {
+      throw new Error(`No option chain for ${key}`);
+    }
+  }
+
+  async getOptionChainMetadata(
+    key: InstrumentKey,
+    signal?: AbortSignal,
+  ): Promise<OptionChainMetadata> {
+    await this.delay(signal);
+    this.assertOptionChain(key);
+    const config = SIM_CONFIG[key]!;
+    const instrument = marketCatalog.instrumentByKey(key);
+    const expiries = simulateExpiries(key, this.now());
+    return {
+      instrumentKey: key,
+      symbol: instrument.symbol,
+      name: instrument.name,
+      strikeStep: config.step,
+      lotSize: config.lotSize,
+      expiries,
+      nearestExpiry: expiries[0]?.expiryDate ?? null,
+    };
+  }
+
+  async getOptionChainExpiries(key: InstrumentKey, signal?: AbortSignal): Promise<Expiry[]> {
+    await this.delay(signal);
+    this.assertOptionChain(key);
+    return simulateExpiries(key, this.now());
+  }
+
+  async getOptionChainSnapshot(
+    key: InstrumentKey,
+    expiry: IsoDate | null,
+    signal?: AbortSignal,
+  ): Promise<OptionChainSnapshot> {
+    await this.delay(signal);
+    this.assertOptionChain(key);
+    const expiries = simulateExpiries(key, this.now());
+    const target = expiry ? expiries.find((e) => e.expiryDate === expiry) : expiries[0];
+    if (!target) throw new Error(`No listed expiry ${expiry ?? ''} for ${key}`);
+    const now = this.now();
+    const bucket = now - (now % this.quoteBucketMs);
+    return simulateSnapshot(key, target, bucket, this.strikesEachSide);
   }
 }

@@ -86,3 +86,43 @@ export function formatMinutesOfDay(minutes: number): string {
   const m = minutes % 60;
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
+
+/** Indian compact notation for volumes/OI: 1,23,45,678 → `1.23Cr`, 4,56,789 → `4.57L`. */
+export function formatCompactIndian(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '−' : '';
+  if (abs >= 1e7) return `${sign}${(abs / 1e7).toFixed(2)}Cr`;
+  if (abs >= 1e5) return `${sign}${(abs / 1e5).toFixed(2)}L`;
+  if (abs >= 1e3) return `${sign}${levelFormatter(0).format(abs)}`;
+  return `${sign}${abs.toFixed(0)}`;
+}
+
+/** Signed compact notation for OI change. */
+export function formatSignedCompactIndian(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  if (value === 0) return '0';
+  return value > 0 ? `+${formatCompactIndian(value)}` : formatCompactIndian(value);
+}
+
+/** `16 Sep` from `YYYY-MM-DD`. */
+export function formatIsoDateShort(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!y || !m || !d) return isoDate;
+  return `${d.toString().padStart(2, '0')} ${MONTHS_SHORT[m - 1] ?? ''}`;
+}
+
+const MONTHS_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];

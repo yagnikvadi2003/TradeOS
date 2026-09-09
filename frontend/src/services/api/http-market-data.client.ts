@@ -1,7 +1,20 @@
 import type { CandleInterval, CandleSeries } from '@/features/charts/domain';
 import type { IndexQuote, InstrumentKey } from '@/features/market/domain';
+import type {
+  Expiry,
+  IsoDate,
+  OptionChainMetadata,
+  OptionChainSnapshot,
+} from '@/features/option-chain/domain';
 import type { HttpClient } from './http-client';
 import type { MarketDataClient } from './market-data.client';
+import {
+  expiriesResponseSchema,
+  metadataResponseSchema,
+  type OptionChainMetadataDto,
+  type OptionChainSnapshotDto,
+  snapshotResponseSchema,
+} from './option-chain.schemas';
 import { candlesResponseSchema, indexQuotesResponseSchema } from './schemas';
 
 /**
@@ -58,4 +71,64 @@ export class HttpMarketDataClient implements MarketDataClient {
       ),
     };
   }
+
+  async getOptionChainMetadata(
+    key: InstrumentKey,
+    signal?: AbortSignal,
+  ): Promise<OptionChainMetadata> {
+    const response = await this.http.get(
+      `/option-chain/${encodeURIComponent(key)}`,
+      metadataResponseSchema,
+      signal,
+    );
+    return metadataFromDto(response.data);
+  }
+
+  async getOptionChainExpiries(key: InstrumentKey, signal?: AbortSignal): Promise<Expiry[]> {
+    const response = await this.http.get(
+      `/option-chain/${encodeURIComponent(key)}/expiries`,
+      expiriesResponseSchema,
+      signal,
+    );
+    return response.data.map((e) => ({ ...e, instrumentKey: e.instrumentKey as InstrumentKey }));
+  }
+
+  async getOptionChainSnapshot(
+    key: InstrumentKey,
+    expiry: IsoDate | null,
+    signal?: AbortSignal,
+  ): Promise<OptionChainSnapshot> {
+    const query = expiry ? `?expiry=${encodeURIComponent(expiry)}` : '';
+    const response = await this.http.get(
+      `/option-chain/${encodeURIComponent(key)}/snapshot${query}`,
+      snapshotResponseSchema,
+      signal,
+    );
+    return snapshotFromDto(response.data);
+  }
+}
+
+/* DTO → domain. The shapes match after validation; the casts narrow the
+   string keys to the branded frontend types. */
+function metadataFromDto(dto: OptionChainMetadataDto): OptionChainMetadata {
+  return {
+    ...dto,
+    instrumentKey: dto.instrumentKey as InstrumentKey,
+    expiries: dto.expiries.map((e) => ({ ...e, instrumentKey: e.instrumentKey as InstrumentKey })),
+  };
+}
+
+function snapshotFromDto(dto: OptionChainSnapshotDto): OptionChainSnapshot {
+  const instrumentKey = dto.instrumentKey as InstrumentKey;
+  return {
+    ...dto,
+    instrumentKey,
+    expiry: { ...dto.expiry, instrumentKey },
+    underlying: { ...dto.underlying, instrumentKey },
+    strikes: dto.strikes.map((s) => ({
+      ...s,
+      ce: s.ce ? { ...s.ce, contract: { ...s.ce.contract, underlyingKey: instrumentKey } } : null,
+      pe: s.pe ? { ...s.pe, contract: { ...s.pe.contract, underlyingKey: instrumentKey } } : null,
+    })),
+  };
 }

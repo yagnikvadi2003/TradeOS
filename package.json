@@ -1,6 +1,6 @@
 {
   "name": "tradeos",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "TradeOS — Indian market option-chain terminal (monorepo root)",
   "packageManager": "pnpm@10.34.5",
@@ -14,6 +14,15 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "backend": "pnpm --filter @tradeos/backend"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "esbuild",
+      "prisma",
+      "@prisma/engines"
+    ]
   }
 }

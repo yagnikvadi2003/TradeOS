@@ -36,7 +36,7 @@ export function TerminalLayout() {
   const isPrivate = location.pathname.endsWith('/option-chain');
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex h-dvh flex-col">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-accent focus:px-3 focus:py-1 focus:text-accent-foreground"
@@ -97,7 +97,7 @@ export function TerminalLayout() {
             className="h-full"
           />
         </aside>
-        <main id="main" className="min-w-0 flex-1" tabIndex={-1}>
+        <main id="main" className="flex min-w-0 flex-1 flex-col overflow-y-auto" tabIndex={-1}>
           <ErrorBoundary key={location.pathname}>
             <Outlet />
           </ErrorBoundary>
