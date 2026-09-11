@@ -1,0 +1,410 @@
+{
+  "title": "TradeOS \u2014 Market Data",
+  "uid": "tradeos-market",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Prometheus"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Provider connection",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "market_provider_connection",
+          "legendFormat": "connected",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Data staleness (s)",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "market_data_staleness_seconds",
+          "legendFormat": "staleness",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "WS clients / keys",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "market_ws_clients",
+          "legendFormat": "clients",
+          "refId": "A"
+        },
+        {
+          "expr": "market_ws_subscribed_keys",
+          "legendFormat": "keys",
+          "refId": "B"
+        },
+        {
+          "expr": "market_ws_subscriptions",
+          "legendFormat": "subscriptions",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Redis",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "redis_available",
+          "legendFormat": "available",
+          "refId": "A"
+        },
+        {
+          "expr": "redis_latency_ms",
+          "legendFormat": "latency ms",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Provider frames / normalized / invalid (per s)",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": "ops",
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "rate(market_provider_messages_total[1m])",
+          "legendFormat": "frames",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(market_data_normalized_total[1m])",
+          "legendFormat": "normalized",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(market_data_invalid_total[1m])",
+          "legendFormat": "invalid",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Reconnects & stale events",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "increase(market_provider_reconnect_total[5m])",
+          "legendFormat": "reconnects/5m",
+          "refId": "A"
+        },
+        {
+          "expr": "increase(market_data_stale_events_total[5m])",
+          "legendFormat": "stale/5m",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Fanout: frames, updates, coalesced, dropped (per s)",
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": "ops",
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "rate(market_ws_fanout_total[1m])",
+          "legendFormat": "delta frames",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(market_ws_fanout_updates_total[1m])",
+          "legendFormat": "updates",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(market_data_coalesced_total[1m])",
+          "legendFormat": "coalesced",
+          "refId": "C"
+        },
+        {
+          "expr": "rate(market_data_dropped_total[1m])",
+          "legendFormat": "dropped",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "WebSocket latency (ms)",
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": "ms",
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "market_ws_latency_ms{quantile=\"0.5\"}",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "market_ws_latency_ms{quantile=\"0.95\"}",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "market_ws_latency_ms{quantile=\"1\"}",
+          "legendFormat": "max",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "HTTP request duration p95 (s)",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": "s",
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "HTTP errors (per s)",
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": "ops",
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "rate(http_errors_total[5m])",
+          "legendFormat": "{{class}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Process memory",
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": "bytes",
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "process_memory_rss_bytes",
+          "legendFormat": "rss",
+          "refId": "A"
+        },
+        {
+          "expr": "process_memory_heap_used_bytes",
+          "legendFormat": "heap used",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Process CPU %",
+      "gridPos": {
+        "x": 12,
+        "y": 25,
+        "w": "percent",
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "process_cpu_percent",
+          "legendFormat": "cpu",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "WS security counters (per 5m)",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "increase(market_ws_auth_failures_total[5m])",
+          "legendFormat": "auth failures",
+          "refId": "A"
+        },
+        {
+          "expr": "increase(market_ws_rate_limited_total[5m])",
+          "legendFormat": "rate limited",
+          "refId": "B"
+        },
+        {
+          "expr": "increase(market_ws_rejected_connections_total[5m])",
+          "legendFormat": "rejected upgrades",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Backpressure skips (per 5m)",
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
+      "targets": [
+        {
+          "expr": "increase(market_ws_backpressure_skips_total[5m])",
+          "legendFormat": "skips",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "tradeos",
+    "market-data"
+  ]
+}

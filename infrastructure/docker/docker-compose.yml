@@ -1,0 +1,58 @@
+# Free/small deployment: one backend, one static frontend behind Caddy,
+# PostgreSQL for metadata. Redis is optional — omit the service (and
+# REDIS_URL) for single-instance mode; add it to run several backends.
+services:
+  backend:
+    build: { context: ../.., dockerfile: infrastructure/docker/Dockerfile.backend }
+    env_file: ../../.env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      TRUST_PROXY: 'true'
+      DATABASE_URL: postgresql://tradeos:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/tradeos
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 512M }
+    logging: { driver: json-file, options: { max-size: '10m', max-file: '3' } }
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.frontend
+      args: { VITE_PUBLIC_ORIGIN: ${VITE_PUBLIC_ORIGIN:-https://localhost} }
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports: ['80:80', '443:443']
+    depends_on: [backend]
+    restart: unless-stopped
+    volumes:
+      - caddy_data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tradeos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: tradeos
+    command: ['postgres', '-c', 'max_connections=40', '-c', 'shared_buffers=64MB']
+    volumes: ['pg_data:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tradeos']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Optional. Uncomment with REDIS_URL=redis://redis:6379 in .env to scale out.
+  # redis:
+  #   image: redis:7-alpine
+  #   command: ['redis-server', '--maxmemory', '64mb', '--maxmemory-policy', 'allkeys-lru', '--save', '']
+  #   restart: unless-stopped
+
+volumes:
+  pg_data:
+  caddy_data:

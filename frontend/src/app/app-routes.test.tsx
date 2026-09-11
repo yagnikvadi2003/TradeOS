@@ -1,5 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
+import { type MockMarketStream } from '@/services/websocket/mock-market-stream';
+import { useMarketStateStore } from '@/stores/market-state.store';
 import { describe, expect, it } from 'vitest';
 import { createTestClient, renderApp } from '@/tests/utils/render';
 
@@ -88,12 +91,38 @@ describe('application routes', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 
-  it('shows the realtime indicator as not connected in phase 1', async () => {
-    renderApp('/markets');
-    const indicator = await screen.findByText('Not connected');
-    expect(indicator.closest('[data-connection]')).toHaveAttribute(
-      'data-connection',
-      'unavailable',
+  it('keeps the stream idle on pages without live subscriptions and goes live on an index page', async () => {
+    const { stream } = renderApp('/markets');
+    const idle = await screen.findByText('Off');
+    expect(idle.closest('[data-connection]')).toHaveAttribute('data-connection', 'idle');
+    expect(stream.info.state).toBe('idle');
+  });
+
+  it('subscribes the index page to the underlying and paints live ticks into the header', async () => {
+    const { stream } = renderApp('/markets/nse/financial/bank-nifty');
+    await screen.findByRole('heading', { name: 'BANK NIFTY' });
+    await waitFor(() =>
+      expect((stream as MockMarketStream).retainedKeys.has('NSE:INDEX:BANKNIFTY')).toBe(true),
     );
+    expect(document.querySelector('[data-connection]')).toHaveAttribute(
+      'data-connection',
+      'connected',
+    );
+    await waitFor(() =>
+      expect(useMarketStateStore.getState().updates['NSE:INDEX:BANKNIFTY']).toBeDefined(),
+    );
+    const live = useMarketStateStore.getState().updates['NSE:INDEX:BANKNIFTY'];
+    expect(live?.kind).toBe('index');
+    expect(live?.source).toBe('simulated');
+  });
+
+  it('retains every visible contract of the option chain and releases them on navigation', async () => {
+    const { stream, router } = renderApp('/markets/nse/benchmark/nifty-50/option-chain');
+    await screen.findByTestId('option-chain-grid');
+    const mock = stream as MockMarketStream;
+    await waitFor(() => expect(mock.retainedKeys.size).toBe(1 + 21 * 2));
+    expect(mock.retainedKeys.has('NSE:INDEX:NIFTY50')).toBe(true);
+    await act(() => router.navigate('/markets'));
+    await waitFor(() => expect(mock.retainedKeys.size).toBe(0));
   });
 });

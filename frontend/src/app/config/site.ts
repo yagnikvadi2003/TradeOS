@@ -4,7 +4,7 @@ import { env } from './env';
 export const siteConfig = {
   name: env.VITE_APP_NAME,
   origin: env.VITE_PUBLIC_ORIGIN,
-  version: '0.2.0',
+  version: '0.5.0',
   description:
     'TradeOS — a professional Indian market terminal for NIFTY 50, BANK NIFTY, FINNIFTY, SENSEX, BANKEX and INDIA VIX with live charts and option chains.',
   locale: 'en_IN',

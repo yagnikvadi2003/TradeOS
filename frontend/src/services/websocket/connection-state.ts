@@ -1,13 +1,13 @@
 /**
- * Realtime connection lifecycle states shared by the (future) WebSocket
- * client and the UI indicator. Phase 1 only renders the indicator; the
- * gateway client that drives these transitions arrives with the market data
- * gateway.
+ * Realtime connection lifecycle states shared by the market-stream client
+ * and the UI indicator. `degraded` means the socket is open but the
+ * upstream provider feed is stale or reconnecting.
  */
 export const CONNECTION_STATES = [
   'idle',
   'connecting',
   'connected',
+  'degraded',
   'reconnecting',
   'disconnected',
   'unavailable',
@@ -22,4 +22,16 @@ export interface RealtimeConnectionInfo {
   /** Round-trip latency of the last heartbeat, ms. */
   readonly latencyMs: number | null;
   readonly reconnectAttempt: number;
+  /** Upstream provider feed state as reported by the gateway. */
+  readonly providerState: ProviderConnectionState | null;
+  readonly providerStale: boolean;
 }
+
+export type ProviderConnectionState =
+  | 'DISCONNECTED'
+  | 'CONNECTING'
+  | 'AUTHENTICATING'
+  | 'CONNECTED'
+  | 'DEGRADED'
+  | 'RECONNECTING'
+  | 'STOPPING';

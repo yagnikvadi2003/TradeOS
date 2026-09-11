@@ -25,6 +25,14 @@ export const indexQuotesResponseSchema = z.object({
   data: z.array(indexQuoteDtoSchema),
 });
 
+export const realtimeTokenResponseSchema = z.object({
+  data: z.object({
+    token: z.string().min(16),
+    expiresAt: z.number().int().nonnegative(),
+    path: z.string().optional(),
+  }),
+});
+
 export const candleDtoSchema = z.object({
   time: z.number().int().nonnegative(),
   open: z.number().finite(),

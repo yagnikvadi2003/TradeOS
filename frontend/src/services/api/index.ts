@@ -12,7 +12,7 @@ import { MockMarketDataClient } from './mock-market-data.client';
  * backend contract — simulated data cannot ship to users.
  */
 export function createMarketDataClient(): MarketDataClient {
-  if (env.VITE_MARKET_DATA_SOURCE === 'mock') {
+  if (env.VITE_MARKET_DATA_SOURCE === 'mock' && !env.PROD) {
     return new MockMarketDataClient();
   }
   return new HttpMarketDataClient(new HttpClient({ baseUrl: env.VITE_API_BASE_URL }));

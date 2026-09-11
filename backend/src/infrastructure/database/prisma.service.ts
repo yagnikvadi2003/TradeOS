@@ -8,11 +8,28 @@ import { PrismaClient } from '@/generated/prisma/client';
  */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  constructor(connectionString: string) {
+  constructor(
+    connectionString: string,
+    poolMax = 4,
+    private readonly onQuery?: (durationMs: number) => void,
+    private readonly onError?: () => void,
+  ) {
     super({
-      adapter: new PrismaPg({ connectionString, max: 4, idleTimeoutMillis: 30_000 }),
-      log: ['warn', 'error'],
+      adapter: new PrismaPg({ connectionString, max: poolMax, idleTimeoutMillis: 30_000 }),
+      log: [
+        { emit: 'event', level: 'query' },
+        { emit: 'event', level: 'error' },
+        { emit: 'stdout', level: 'warn' },
+      ],
     });
+    // Query latency histogram feed; the SQL text itself is never retained.
+    (this as unknown as { $on: (e: 'query', cb: (ev: { duration: number }) => void) => void }).$on(
+      'query',
+      (event) => this.onQuery?.(event.duration),
+    );
+    (this as unknown as { $on: (e: 'error', cb: () => void) => void }).$on('error', () =>
+      this.onError?.(),
+    );
   }
 
   async onModuleInit(): Promise<void> {

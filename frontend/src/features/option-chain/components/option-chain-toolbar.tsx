@@ -27,6 +27,8 @@ interface OptionChainToolbarProps {
   selectedExpiry: IsoDate | null;
   onSelectExpiry: (expiry: IsoDate) => void;
   snapshot: OptionChainSnapshot | null;
+  /** Newest data timestamp on screen (stream or snapshot). */
+  dataAsOf: number | null;
   decimals: number;
   isRefreshing: boolean;
   onRefresh: () => void;
@@ -45,6 +47,7 @@ export function OptionChainToolbar({
   selectedExpiry,
   onSelectExpiry,
   snapshot,
+  dataAsOf,
   decimals,
   isRefreshing,
   onRefresh,
@@ -105,7 +108,7 @@ export function OptionChainToolbar({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {snapshot ? <QuoteSourceBadge source={snapshot.source} /> : null}
           <MarketStatus exchangeCode={exchangeCode} />
-          {snapshot ? <DataFreshnessIndicator oldestUpdateAt={snapshot.oldestUpdateAt} /> : null}
+          {dataAsOf !== null ? <DataFreshnessIndicator oldestUpdateAt={dataAsOf} /> : null}
           <ConnectionStatus />
         </div>
       </div>

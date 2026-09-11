@@ -15,6 +15,8 @@ export default defineConfig({
     proxy: {
       // Backend REST (phase 2+). The browser never talks to the provider.
       '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      // Application market stream (never the provider feed).
+      '/ws': { target: 'ws://localhost:3000', ws: true, changeOrigin: true },
     },
   },
   build: {

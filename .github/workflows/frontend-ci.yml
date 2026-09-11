@@ -3,9 +3,31 @@ name: frontend-ci
 on:
   push:
     branches: [main]
-    paths: ['frontend/**', 'package.json', 'pnpm-workspace.yaml', '.github/workflows/frontend-ci.yml']
+    paths:
+      [
+        'frontend/**',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+        '.github/workflows/frontend-ci.yml',
+      ]
   pull_request:
-    paths: ['frontend/**', 'package.json', 'pnpm-workspace.yaml', '.github/workflows/frontend-ci.yml']
+    paths:
+      [
+        'frontend/**',
+        'backend/**',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+        '.github/workflows/frontend-ci.yml',
+      ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -23,5 +45,37 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @tradeos/frontend typecheck
       - run: pnpm --filter @tradeos/frontend lint
+      - run: pnpm --filter @tradeos/frontend format:check
       - run: pnpm --filter @tradeos/frontend test
       - run: pnpm --filter @tradeos/frontend build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  e2e:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tradeos/frontend exec playwright install --with-deps chromium
+      # Builds backend + frontend (VITE_E2E_HOOKS=true), starts both, runs Playwright.
+      - run: pnpm test:e2e
+        env:
+          CI: 'true'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7

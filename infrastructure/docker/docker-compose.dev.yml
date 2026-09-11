@@ -1,0 +1,26 @@
+# Local infrastructure only — the app itself runs with `pnpm dev`.
+# Both services are optional: without them the backend uses the in-memory
+# repository and single-instance realtime mode.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tradeos
+      POSTGRES_PASSWORD: tradeos
+      POSTGRES_DB: tradeos
+    ports: ['5432:5432']
+    volumes: ['pg_dev:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tradeos']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command:
+      ['redis-server', '--save', '', '--maxmemory', '64mb', '--maxmemory-policy', 'allkeys-lru']
+    ports: ['6379:6379']
+
+volumes:
+  pg_dev:

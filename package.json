@@ -1,6 +1,6 @@
 {
   "name": "tradeos",
-  "version": "0.2.0",
+  "version": "0.5.0",
   "private": true,
   "description": "TradeOS — Indian market option-chain terminal (monorepo root)",
   "packageManager": "pnpm@10.34.5",
@@ -15,7 +15,15 @@
     "test": "pnpm -r test",
     "build": "pnpm -r build",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
-    "backend": "pnpm --filter @tradeos/backend"
+    "backend": "pnpm --filter @tradeos/backend",
+    "test:e2e": "pnpm --filter @tradeos/backend build && VITE_E2E_HOOKS=true pnpm --filter @tradeos/frontend build && pnpm --filter @tradeos/frontend test:e2e",
+    "audit": "pnpm audit --audit-level=high",
+    "dev": "pnpm -r --parallel --stream dev",
+    "format": "pnpm -r format",
+    "format:check": "pnpm -r format:check",
+    "test:integration": "pnpm --filter @tradeos/backend test:integration",
+    "infra:dev": "docker compose -f infrastructure/docker/docker-compose.dev.yml up -d",
+    "infra:dev:down": "docker compose -f infrastructure/docker/docker-compose.dev.yml down"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -23,6 +31,11 @@
       "esbuild",
       "prisma",
       "@prisma/engines"
-    ]
+    ],
+    "overrides": {
+      "multer": ">=2.3.0",
+      "deepmerge-ts": ">=8.0.0",
+      "mysql2": ">=3.22.0"
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { initBrowserSentry } from '@/app/observability/sentry';
 import { App } from './app/App';
 import './styles/globals.css';
 
@@ -13,3 +14,6 @@ createRoot(container).render(
     <App />
   </StrictMode>,
 );
+
+// Fire-and-forget: never delays first paint, no-op without VITE_SENTRY_DSN.
+void initBrowserSentry();

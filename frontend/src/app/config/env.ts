@@ -9,6 +9,16 @@ const envSchema = z.object({
   VITE_PUBLIC_ORIGIN: z.url().default('http://localhost:5173'),
   VITE_API_BASE_URL: z.string().min(1).default('/api/v1'),
   VITE_MARKET_DATA_SOURCE: z.enum(['http', 'mock']).default('http'),
+  /** Market stream WebSocket path or absolute ws(s) URL. Same-origin by default. */
+  VITE_WS_URL: z.string().min(1).default('/ws/market'),
+  /** Browser error tracking (production builds only; SDK lazy-loaded when set). */
+  VITE_SENTRY_DSN: z.url().optional(),
+  VITE_APP_VERSION: z.string().optional(),
+  /** E2E-only: expose live sockets on `window.__tradeosSockets` so tests can drop them. Inert otherwise. */
+  VITE_E2E_HOOKS: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   MODE: z.string().default('development'),
   DEV: z.boolean().default(false),
   PROD: z.boolean().default(false),
@@ -23,6 +33,10 @@ function loadEnv(): AppEnv {
     VITE_PUBLIC_ORIGIN: raw.VITE_PUBLIC_ORIGIN,
     VITE_API_BASE_URL: raw.VITE_API_BASE_URL,
     VITE_MARKET_DATA_SOURCE: raw.VITE_MARKET_DATA_SOURCE,
+    VITE_WS_URL: raw.VITE_WS_URL,
+    VITE_SENTRY_DSN: raw.VITE_SENTRY_DSN,
+    VITE_APP_VERSION: raw.VITE_APP_VERSION,
+    VITE_E2E_HOOKS: raw.VITE_E2E_HOOKS,
     MODE: raw.MODE,
     DEV: raw.DEV,
     PROD: raw.PROD,

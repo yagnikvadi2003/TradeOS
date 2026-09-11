@@ -1,8 +1,10 @@
 import { type GridApi, type GridReadyEvent, type RowClassParams } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useMarketStateStore } from '@/stores/market-state.store';
 import {
   diffRows,
+  mergeRowsLive,
   type OptionChainRow,
   type OptionChainSnapshot,
   snapshotToRows,
@@ -76,7 +78,9 @@ export const OptionChainGrid = memo(function OptionChainGrid({
   );
 
   const applyRows = useCallback(
-    (api: GridApi<OptionChainRow>, nextRows: OptionChainRow[], key: string) => {
+    (api: GridApi<OptionChainRow>, snapshotRows: OptionChainRow[], key: string) => {
+      // A REST snapshot never regresses values the stream has already moved past.
+      const nextRows = mergeRowsLive(snapshotRows, useMarketStateStore.getState().updates).rows;
       if (datasetKey.current !== key) {
         // Instrument / expiry / window changed: the row set is legitimately new.
         datasetKey.current = key;
@@ -113,6 +117,45 @@ export const OptionChainGrid = memo(function OptionChainGrid({
     }
     applyRows(api, rows, nextDatasetKey);
   }, [rows, nextDatasetKey, applyRows]);
+
+  // Live path: store batch → merge into the rows the grid holds → one
+  // transaction with only the changed rows. Throttled to one grid update per
+  // animation frame so a hot feed cannot outrun the screen; React is not involved.
+  useEffect(() => {
+    let frame: number | null = null;
+    // Contract keys touched since the last frame; a burst of batches inside one
+    // frame still costs one merge over only the affected rows.
+    const dirty = new Set<string>();
+    const flush = () => {
+      frame = null;
+      const api = apiRef.current;
+      if (!api || api.isDestroyed() || dirty.size === 0) return;
+      const { updates } = useMarketStateStore.getState();
+      const candidates: OptionChainRow[] = [];
+      for (const row of currentRows.current.values()) {
+        if (
+          (row.ce && dirty.has(row.ce.contract.contractKey)) ||
+          (row.pe && dirty.has(row.pe.contract.contractKey))
+        ) {
+          candidates.push(row);
+        }
+      }
+      dirty.clear();
+      const { changed } = mergeRowsLive(candidates, updates);
+      if (changed.length === 0) return;
+      for (const r of changed) currentRows.current.set(r.id, r);
+      api.applyTransactionAsync({ update: changed });
+    };
+    const unsubscribe = useMarketStateStore.subscribe((state, previous) => {
+      if (state.version === previous.version) return;
+      for (const key of state.lastBatchKeys) if (key.includes(':OPT:')) dirty.add(key);
+      if (dirty.size) frame ??= requestAnimationFrame(flush);
+    });
+    return () => {
+      unsubscribe();
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(
     () => () => {

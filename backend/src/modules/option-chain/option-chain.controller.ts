@@ -1,6 +1,6 @@
 import { Controller, Get, Header, Inject, Param, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { z } from 'zod';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiStandardErrors, ApiZodResponse } from '@/common/openapi/zod-openapi';
 import { type InstrumentKey } from '@/common/market/market-primitives';
 import { ZodValidationPipe } from '@/common/validation/zod-validation.pipe';
 import {
@@ -47,11 +47,12 @@ export class OptionChainController {
   @Header('Cache-Control', 'private, max-age=60')
   @ApiOperation({ summary: 'Option-chain metadata (lot size, strike step, expiries)' })
   @ApiParam(INSTRUMENT_PARAM)
-  @ApiResponse({ status: 200, schema: z.toJSONSchema(metadataResponseSchema) as never })
-  @ApiResponse({
-    status: 404,
-    description: 'Unknown instrument or no option chain (e.g. INDIA VIX)',
+  @ApiZodResponse({
+    status: 200,
+    description: 'Metadata for an option-chain instrument',
+    schema: metadataResponseSchema,
   })
+  @ApiStandardErrors(400, 404, 429, 503)
   async getMetadata(
     @Param(new ZodValidationPipe(instrumentParamSchema)) params: InstrumentParam,
   ): Promise<MetadataResponse> {
@@ -63,7 +64,8 @@ export class OptionChainController {
   @Header('Cache-Control', 'private, max-age=60')
   @ApiOperation({ summary: 'Listed expiries for an option-chain instrument' })
   @ApiParam(INSTRUMENT_PARAM)
-  @ApiResponse({ status: 200, schema: z.toJSONSchema(expiriesResponseSchema) as never })
+  @ApiZodResponse({ status: 200, description: 'Listed expiries', schema: expiriesResponseSchema })
+  @ApiStandardErrors(400, 404, 429, 503)
   async getExpiries(
     @Param(new ZodValidationPipe(instrumentParamSchema)) params: InstrumentParam,
   ): Promise<ExpiriesResponse> {
@@ -76,8 +78,13 @@ export class OptionChainController {
   @ApiOperation({ summary: 'Full option-chain snapshot for one expiry (nearest by default)' })
   @ApiParam(INSTRUMENT_PARAM)
   @ApiQuery({ name: 'expiry', required: false, example: '2026-09-15', description: 'YYYY-MM-DD' })
-  @ApiResponse({ status: 200, schema: z.toJSONSchema(snapshotResponseSchema) as never })
-  @ApiResponse({ status: 503, description: 'Market data provider unavailable' })
+  @ApiZodResponse({
+    status: 200,
+    description:
+      'Assembled chain: strikes ascending, ATM flagged, per-leg market data plus TradeOS-derived intrinsic/extrinsic and totals. Initial snapshot only — live changes stream over /ws/market.',
+    schema: snapshotResponseSchema,
+  })
+  @ApiStandardErrors(400, 404, 429, 502, 503)
   async getSnapshot(
     @Param(new ZodValidationPipe(instrumentParamSchema)) params: InstrumentParam,
     @Query(new ZodValidationPipe(snapshotQuerySchema)) query: SnapshotQuery,

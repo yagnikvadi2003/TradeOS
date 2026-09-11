@@ -54,7 +54,8 @@ export const ModelName = {
   Instrument: 'Instrument',
   Expiry: 'Expiry',
   OptionInstrument: 'OptionInstrument',
-  ProviderInstrumentMapping: 'ProviderInstrumentMapping'
+  ProviderInstrumentMapping: 'ProviderInstrumentMapping',
+  ProviderCredential: 'ProviderCredential'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -137,6 +138,20 @@ export const ProviderInstrumentMappingScalarFieldEnum = {
 } as const
 
 export type ProviderInstrumentMappingScalarFieldEnum = (typeof ProviderInstrumentMappingScalarFieldEnum)[keyof typeof ProviderInstrumentMappingScalarFieldEnum]
+
+
+export const ProviderCredentialScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  ciphertext: 'ciphertext',
+  iv: 'iv',
+  tag: 'tag',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProviderCredentialScalarFieldEnum = (typeof ProviderCredentialScalarFieldEnum)[keyof typeof ProviderCredentialScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -297,6 +297,26 @@ function leg(
   return { contract, market };
 }
 
+/** One simulated option leg for a contract key, or null when the key is not simulated. */
+export function simulateOptionLeg(contractKey: string, bucket: number): OptionLeg | null {
+  const parts = contractKey.split(':');
+  if (parts.length !== 6 || parts[1] !== 'OPT') return null;
+  const [exchange, , symbol, expiry, strikeText, type] = parts as [
+    string,
+    string,
+    string,
+    string,
+    string,
+    string,
+  ];
+  const key = `${exchange}:INDEX:${symbol}` as InstrumentKey;
+  const config = SIM_CONFIG[key];
+  const strike = Number(strikeText);
+  if (!config || !Number.isFinite(strike) || (type !== 'CE' && type !== 'PE')) return null;
+  const tickSize = marketCatalog.instrumentByKey(key).tickSize;
+  return leg(key, expiry, strike, type, simulateUnderlying(key, bucket), bucket, config, tickSize);
+}
+
 export function simulateSnapshot(
   key: InstrumentKey,
   expiry: Expiry,

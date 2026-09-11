@@ -7,7 +7,7 @@ import type {
   OptionChainSnapshot,
 } from '@/features/option-chain/domain';
 import type { HttpClient } from './http-client';
-import type { MarketDataClient } from './market-data.client';
+import type { MarketDataClient, RealtimeToken } from './market-data.client';
 import {
   expiriesResponseSchema,
   metadataResponseSchema,
@@ -15,7 +15,11 @@ import {
   type OptionChainSnapshotDto,
   snapshotResponseSchema,
 } from './option-chain.schemas';
-import { candlesResponseSchema, indexQuotesResponseSchema } from './schemas';
+import {
+  candlesResponseSchema,
+  indexQuotesResponseSchema,
+  realtimeTokenResponseSchema,
+} from './schemas';
 
 /**
  * Backend REST adapter (phase 2+ endpoints). Quote snapshots and historical
@@ -26,6 +30,11 @@ export class HttpMarketDataClient implements MarketDataClient {
   readonly kind = 'http' as const;
 
   constructor(private readonly http: HttpClient) {}
+
+  async getRealtimeToken(signal?: AbortSignal): Promise<RealtimeToken> {
+    const response = await this.http.get('/realtime/token', realtimeTokenResponseSchema, signal);
+    return { token: response.data.token, expiresAt: response.data.expiresAt };
+  }
 
   async getIndexQuotes(
     keys: readonly InstrumentKey[],

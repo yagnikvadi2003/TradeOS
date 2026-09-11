@@ -12,7 +12,7 @@ import {
   type OptionChainMetadata,
   type OptionChainSnapshot,
 } from '@/features/option-chain/domain';
-import { type MarketDataClient } from './market-data.client';
+import { type MarketDataClient, type RealtimeToken } from './market-data.client';
 import { SIM_CONFIG, simulateExpiries, simulateSnapshot } from './option-chain.simulator';
 
 /**
@@ -142,6 +142,11 @@ export class MockMarketDataClient implements MarketDataClient {
       });
     }
     return candles;
+  }
+
+  async getRealtimeToken(): Promise<RealtimeToken> {
+    await this.delay();
+    return { token: 'mock-session-token-000000', expiresAt: this.now() + 900_000 };
   }
 
   async getIndexQuotes(

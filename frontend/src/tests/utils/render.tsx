@@ -3,6 +3,9 @@ import { render, type RenderOptions } from '@testing-library/react';
 import { type ReactElement, type ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { MarketDataProvider } from '@/app/providers/market-data-provider';
+import { MarketStreamProvider } from '@/app/providers/market-stream-provider';
+import { type MarketStream } from '@/services/websocket/market-stream';
+import { MockMarketStream } from '@/services/websocket/mock-market-stream';
 import { routes } from '@/app/router/routes';
 import { MockMarketDataClient, type MarketDataClient } from '@/services/api';
 
@@ -22,12 +25,19 @@ function createTestQueryClient() {
 
 interface ProviderOptions {
   client?: MarketDataClient;
+  /** Manual by default: ticks only when a test calls `stream.tick()`. */
+  stream?: MarketStream;
+}
+
+export function createTestStream(options: ConstructorParameters<typeof MockMarketStream>[0] = {}) {
+  return new MockMarketStream({ manual: true, now: () => FIXED_NOW, ...options });
 }
 
 export function renderWithProviders(
   ui: ReactElement,
   {
     client = createTestClient(),
+    stream = createTestStream(),
     ...options
   }: ProviderOptions & Omit<RenderOptions, 'wrapper'> = {},
 ) {
@@ -35,7 +45,9 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <MarketDataProvider client={client}>{children}</MarketDataProvider>
+        <MarketDataProvider client={client}>
+          <MarketStreamProvider stream={stream}>{children}</MarketStreamProvider>
+        </MarketDataProvider>
       </QueryClientProvider>
     );
   }
@@ -45,18 +57,20 @@ export function renderWithProviders(
 /** Mount the real route table at a given URL. */
 export function renderApp(
   initialPath: string,
-  { client = createTestClient() }: ProviderOptions = {},
+  { client = createTestClient(), stream = createTestStream() }: ProviderOptions = {},
 ) {
   const router = createMemoryRouter(routes, { initialEntries: [initialPath] });
   const queryClient = createTestQueryClient();
   const result = render(
     <QueryClientProvider client={queryClient}>
       <MarketDataProvider client={client}>
-        <RouterProvider router={router} />
+        <MarketStreamProvider stream={stream}>
+          <RouterProvider router={router} />
+        </MarketStreamProvider>
       </MarketDataProvider>
     </QueryClientProvider>,
   );
-  return { ...result, router };
+  return { ...result, router, stream };
 }
 
 export { FIXED_NOW };

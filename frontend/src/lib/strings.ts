@@ -77,10 +77,12 @@ export const strings = {
     idle: 'Off',
     connecting: 'Connecting',
     connected: 'Live',
+    degraded: 'Stale feed',
     reconnecting: 'Reconnecting',
     disconnected: 'Disconnected',
     unavailable: 'Not connected',
-    unavailableHint: 'Live streaming arrives with the market data gateway in a later phase.',
+    unavailableHint: 'The market stream is not connected; values are REST snapshots.',
+    degradedHint: 'Connected, but the upstream market feed is stale or reconnecting.',
   },
   quote: {
     source: {

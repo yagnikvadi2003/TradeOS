@@ -3,6 +3,13 @@ import { type Response } from 'express';
 import { Logger } from 'nestjs-pino';
 import { DOMAIN_ERROR_STATUS, DomainError } from './domain-error';
 
+/** Forwards 5xx causes to Sentry when the SDK was initialised; a no-op otherwise. */
+function reportToSentry(exception: unknown): void {
+  const sentry = (globalThis as { __tradeosSentry?: { captureException(e: unknown): void } })
+    .__tradeosSentry;
+  sentry?.captureException(exception);
+}
+
 export interface ErrorResponseBody {
   readonly error: {
     readonly code: string;
@@ -25,6 +32,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
     const { status, body } = this.normalize(exception);
     if (status >= 500) {
       this.logger.error({ err: exception, status }, 'unhandled request error');
+      reportToSentry(exception);
     }
     response.status(status).json(body);
   }

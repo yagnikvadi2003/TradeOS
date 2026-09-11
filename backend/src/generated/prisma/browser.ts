@@ -42,3 +42,9 @@ export type OptionInstrument = Prisma.OptionInstrumentModel
  * instrument-master sync; keeps provider identifiers out of the domain.
  */
 export type ProviderInstrumentMapping = Prisma.ProviderInstrumentMappingModel
+/**
+ * Model ProviderCredential
+ * Provider access token at rest: AES-256-GCM ciphertext only. One row per
+ * provider; rotated on every OAuth exchange. Never joined, never logged.
+ */
+export type ProviderCredential = Prisma.ProviderCredentialModel

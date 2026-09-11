@@ -1,95 +1,25 @@
-# Security Policy
+# Security policy
 
-## Reporting a Vulnerability
+## Reporting
 
-Please report suspected security vulnerabilities privately to the repository maintainers.
+Report vulnerabilities privately to the maintainers. Do not open public issues for security
+findings.
 
-**Do not create a public GitHub issue for a security vulnerability.**
+## Principles (enforced from phase 1)
 
-When reporting a vulnerability, provide:
+- Provider credentials (Upstox access/refresh tokens, client secrets) live only in the backend.
+  The frontend bundle contains no secrets; only `VITE_`-prefixed, non-sensitive settings.
+- The browser never connects to a market-data provider directly. All data flows through the
+  TradeOS backend (REST for snapshots, WebSocket for realtime).
+- No live market data is fabricated. Simulated data exists only in development/tests and is
+  labelled as such in the UI; production builds cannot select it.
+- Private trading screens are `noindex` and excluded from the sitemap.
+- Every external response is schema-validated before it reaches application state.
+- `.env` files (other than the committed non-secret `.env.example` / `.env.development`) are
+  git-ignored.
 
-- A clear description of the issue
-- Affected component or endpoint
-- Reproduction steps, where available
-- Potential security impact
-- Relevant logs or screenshots, with secrets and personal information removed
+## Security review
 
-Please do not include credentials, access tokens, API keys, or other secrets in the report.
-
----
-
-# Security Principles
-
-TradeOS follows a defense-in-depth security model across the frontend, backend, provider integrations, data layer, and deployment infrastructure.
-
-## 1. Provider Credential Isolation
-
-Provider credentials, including future Upstox access/refresh tokens and client secrets, must exist only within trusted backend infrastructure.
-
-They must never be:
-
-- Embedded in frontend source code
-- Exposed through `VITE_*` variables
-- Stored in browser localStorage/sessionStorage
-- Sent to the browser
-- Included in API responses
-- Written to application logs
-- Committed to Git
-
-The browser must never communicate directly with an external market-data provider.
-
----
-
-## 2. Provider Boundary
-
-All external provider responses must pass through the backend provider adapter boundary.
-
-Provider-specific payloads are:
-
-1. Received by the provider adapter
-2. Schema-validated
-3. Normalized into TradeOS domain types
-4. Passed to application services
-
-The application domain must not depend directly on provider-specific payload structures.
-
----
-
-## 3. Market Data Integrity
-
-TradeOS must never fabricate live market data.
-
-Simulated market data is restricted to development and testing environments and must be explicitly identified as simulated.
-
-Production configuration must not silently fall back from a live provider to simulated market data.
-
----
-
-## 4. Request Validation
-
-External input must be validated before reaching application logic.
-
-Validation applies to:
-
-- Route parameters
-- Query parameters
-- Request bodies
-- Provider responses
-- Environment configuration
-- WebSocket messages
-
-Invalid input must be rejected using standardized error codes.
-
----
-
-## 5. Error Handling
-
-API errors use a consistent structure:
-
-```json
-{
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable message"
-  }
-}
+The phase 4 review (authentication, authorization, CORS, Helmet, rate limiting, WebSocket, input
+validation, secrets, logging, dependencies, CSRF, XSS, SSRF, injection, resource exhaustion,
+subscription abuse) is recorded in `docs/security.md`.

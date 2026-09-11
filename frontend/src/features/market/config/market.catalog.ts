@@ -209,6 +209,9 @@ export const marketCatalog = {
       index: index.slug,
     };
   },
+  hasInstrument(key: string): key is InstrumentKey {
+    return instrumentByKey.has(key as InstrumentKey);
+  },
   instrumentByKey(key: InstrumentKey): Instrument {
     const instrument = instrumentByKey.get(key);
     if (!instrument) throw new Error(`Unknown instrument "${key}"`);

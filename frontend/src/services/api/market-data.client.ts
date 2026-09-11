@@ -12,9 +12,16 @@ import {
  * Mock (deterministic simulation for development/tests). The UI depends on
  * this interface only — never on a provider SDK.
  */
+export interface RealtimeToken {
+  readonly token: string;
+  readonly expiresAt: number;
+}
+
 export interface MarketDataClient {
   readonly kind: 'http' | 'mock';
   getIndexQuotes(keys: readonly InstrumentKey[], signal?: AbortSignal): Promise<IndexQuote[]>;
+  /** Short-lived session token for the market WebSocket. */
+  getRealtimeToken(signal?: AbortSignal): Promise<RealtimeToken>;
   getCandles(
     key: InstrumentKey,
     interval: CandleInterval,

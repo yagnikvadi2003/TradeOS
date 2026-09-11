@@ -8,7 +8,7 @@ import { ChartPanel } from '@/features/charts/components/chart-panel';
 import { IndexHeader } from '@/features/market/components/index-header';
 import { marketCatalog } from '@/features/market/config';
 import { type MarketIndexCode } from '@/features/market/domain';
-import { useIndexQuote } from '@/features/market/hooks/use-index-quotes';
+import { useLiveIndexQuote } from '@/features/market/hooks/use-live-index-quote';
 import { useMarketStatus } from '@/features/market/hooks/use-market-status';
 import { strings } from '@/lib/strings';
 import { useMarketUiStore } from '@/stores/market-ui.store';
@@ -29,7 +29,7 @@ export function MarketIndexPage() {
 function MarketIndexWorkspace({ indexCode }: { indexCode: MarketIndexCode }) {
   const index = marketCatalog.indexByCode(indexCode);
   const status = useMarketStatus(index.exchangeCode);
-  const { quote, isLoading, isError, error, refetch } = useIndexQuote(index.instrumentKey);
+  const { quote, isLoading, isError, error, refetch } = useLiveIndexQuote(index.instrumentKey);
   const setLastIndexCode = useMarketUiStore((s) => s.setLastIndexCode);
   const path = marketCatalog.pathOf(index);
 

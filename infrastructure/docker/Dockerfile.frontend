@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1.7
+FROM node:22-alpine AS build
+RUN corepack enable
+WORKDIR /repo
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY frontend/package.json frontend/
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --filter @tradeos/frontend...
+COPY frontend frontend
+ARG VITE_PUBLIC_ORIGIN=https://localhost
+ARG VITE_SENTRY_DSN=
+ENV VITE_PUBLIC_ORIGIN=$VITE_PUBLIC_ORIGIN VITE_SENTRY_DSN=$VITE_SENTRY_DSN VITE_MARKET_DATA_SOURCE=http
+RUN pnpm --filter @tradeos/frontend build
+
+# Static files served by Caddy (see Caddyfile); no Node in the runtime image.
+FROM caddy:2-alpine
+COPY infrastructure/docker/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /repo/frontend/dist /srv

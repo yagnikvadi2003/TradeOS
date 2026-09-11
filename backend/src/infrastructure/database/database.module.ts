@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_ENV, type AppEnv } from '@/common/config/env';
+import { RealtimeMetrics } from '@/infrastructure/realtime/realtime-metrics';
 import { PrismaService } from './prisma.service';
 
 /**
@@ -14,9 +15,16 @@ export const PRISMA = Symbol('PRISMA');
   providers: [
     {
       provide: PRISMA,
-      inject: [APP_ENV],
-      useFactory: (env: AppEnv): PrismaService | null =>
-        env.DATABASE_URL ? new PrismaService(env.DATABASE_URL) : null,
+      inject: [APP_ENV, RealtimeMetrics],
+      useFactory: (env: AppEnv, metrics: RealtimeMetrics): PrismaService | null =>
+        env.DATABASE_URL
+          ? new PrismaService(
+              env.DATABASE_URL,
+              env.DATABASE_POOL_MAX,
+              (ms) => metrics.observeDb(ms / 1000),
+              () => metrics.inc('dbErrors'),
+            )
+          : null,
     },
   ],
   exports: [PRISMA],

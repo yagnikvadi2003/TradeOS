@@ -1,0 +1,14 @@
+# Scrape the TradeOS backend. `/metrics` is computed on scrape (no collector
+# timers), so a 15 s interval costs one Redis PING and a few hundred bytes.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+rule_files:
+  - alerts.yml
+
+scrape_configs:
+  - job_name: tradeos-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['backend:3000']

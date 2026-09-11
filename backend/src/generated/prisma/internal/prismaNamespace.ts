@@ -400,7 +400,8 @@ export const ModelName = {
   Instrument: 'Instrument',
   Expiry: 'Expiry',
   OptionInstrument: 'OptionInstrument',
-  ProviderInstrumentMapping: 'ProviderInstrumentMapping'
+  ProviderInstrumentMapping: 'ProviderInstrumentMapping',
+  ProviderCredential: 'ProviderCredential'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -416,7 +417,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "instrument" | "expiry" | "optionInstrument" | "providerInstrumentMapping"
+    modelProps: "instrument" | "expiry" | "optionInstrument" | "providerInstrumentMapping" | "providerCredential"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -716,6 +717,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ProviderCredential: {
+      payload: Prisma.$ProviderCredentialPayload<ExtArgs>
+      fields: Prisma.ProviderCredentialFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProviderCredentialFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProviderCredentialFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        findFirst: {
+          args: Prisma.ProviderCredentialFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProviderCredentialFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        findMany: {
+          args: Prisma.ProviderCredentialFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>[]
+        }
+        create: {
+          args: Prisma.ProviderCredentialCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        createMany: {
+          args: Prisma.ProviderCredentialCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProviderCredentialCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>[]
+        }
+        delete: {
+          args: Prisma.ProviderCredentialDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        update: {
+          args: Prisma.ProviderCredentialUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProviderCredentialDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProviderCredentialUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProviderCredentialUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProviderCredentialUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        aggregate: {
+          args: Prisma.ProviderCredentialAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProviderCredential>
+        }
+        groupBy: {
+          args: Prisma.ProviderCredentialGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProviderCredentialGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProviderCredentialCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProviderCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -819,6 +894,20 @@ export const ProviderInstrumentMappingScalarFieldEnum = {
 } as const
 
 export type ProviderInstrumentMappingScalarFieldEnum = (typeof ProviderInstrumentMappingScalarFieldEnum)[keyof typeof ProviderInstrumentMappingScalarFieldEnum]
+
+
+export const ProviderCredentialScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  ciphertext: 'ciphertext',
+  iv: 'iv',
+  tag: 'tag',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProviderCredentialScalarFieldEnum = (typeof ProviderCredentialScalarFieldEnum)[keyof typeof ProviderCredentialScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1152,6 +1241,7 @@ export type GlobalOmitConfig = {
   expiry?: Prisma.ExpiryOmit
   optionInstrument?: Prisma.OptionInstrumentOmit
   providerInstrumentMapping?: Prisma.ProviderInstrumentMappingOmit
+  providerCredential?: Prisma.ProviderCredentialOmit
 }
 
 /* Types for Logging */

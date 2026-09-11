@@ -145,7 +145,11 @@ export function MarketNavigator({
   };
 
   return (
-    <nav aria-label={strings.nav.marketTree} className={cn('flex flex-col', className)}>
+    <nav
+      aria-label={strings.nav.marketTree}
+      className={cn('flex flex-col', className)}
+      data-testid="market-tree"
+    >
       <div className="flex items-baseline justify-between px-3 pt-3 pb-2">
         <h2 className="text-sm font-semibold text-ink">{strings.nav.markets}</h2>
         <span className="text-2xs text-ink-faint">

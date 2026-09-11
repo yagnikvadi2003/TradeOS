@@ -140,3 +140,18 @@ model ProviderInstrumentMapping {
   @@unique([provider, optionInstrumentId])
   @@map("provider_instrument_mappings")
 }
+
+/// Provider access token at rest: AES-256-GCM ciphertext only. One row per
+/// provider; rotated on every OAuth exchange. Never joined, never logged.
+model ProviderCredential {
+  id         String    @id @default(uuid()) @db.Uuid
+  provider   String    @unique @db.VarChar(32)
+  ciphertext String    @db.Text
+  iv         String    @db.VarChar(32)
+  tag        String    @db.VarChar(32)
+  expiresAt  DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@map("provider_credentials")
+}

@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo } from 'react';
-import { type Expiry, resolveActiveExpiry } from '@/features/option-chain/domain';
+import { useEffect, useMemo } from 'react';
+import { type Expiry, liveKeysFor, resolveActiveExpiry } from '@/features/option-chain/domain';
 import { Link, useParams } from 'react-router';
 import { paths, routeVisibility } from '@/app/router/paths';
+import { LiveIndexHeader } from '@/features/market/components/live-index-header';
+import { useLiveSubscription } from '@/hooks/use-live-subscription';
 import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 import { Seo } from '@/components/common/seo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { marketCatalog } from '@/features/market/config';
-import { IndexHeader } from '@/features/market/components/index-header';
 import { type MarketIndexCode } from '@/features/market/domain';
 import { useIndexQuote } from '@/features/market/hooks/use-index-quotes';
 import { useMarketStatus } from '@/features/market/hooks/use-market-status';
@@ -59,7 +60,7 @@ function OptionChainUnavailable({ indexCode }: { indexCode: MarketIndexCode }) {
         path={paths.optionChain(path)}
         visibility={routeVisibility.optionChain}
       />
-      <IndexHeader
+      <LiveIndexHeader
         index={index}
         status={status}
         quote={quote}
@@ -102,21 +103,24 @@ function OptionChainWorkspace({ indexCode }: { indexCode: MarketIndexCode }) {
   const snapshotQuery = useOptionChainSnapshot(index.instrumentKey, activeExpiry);
   const snapshot = snapshotQuery.data ?? null;
 
-  // The chain carries the underlying level; the header renders from it so
-  // the two never disagree on screen.
-  const headerQuote = useMemo(() => (snapshot ? { ...snapshot.underlying } : null), [snapshot]);
+  // Live subscriptions: the underlying plus every contract in the visible window.
+  const instrumentKey = index.instrumentKey;
+  // `useLiveSubscription` keys by content, so recomputing this list per render is free.
+  const liveKeys = liveKeysFor(instrumentKey, snapshot, strikeWindow);
+  useLiveSubscription(liveKeys);
+
+  // Ticks are consumed by `LiveIndexHeader` and the freshness indicator through
+  // their own store selectors, so this page never re-renders per tick.
+  const snapshotUnderlying = snapshot?.underlying ?? null;
+  const dataAsOf = snapshot?.oldestUpdateAt ?? null;
 
   useEffect(() => {
     setLastIndexCode(index.code);
   }, [index.code, setLastIndexCode]);
 
-  const instrumentKey = index.instrumentKey;
-  const onSelectExpiry = useCallback(
-    (expiry: string) => selectExpiry(instrumentKey, expiry),
-    [instrumentKey, selectExpiry],
-  );
+  const onSelectExpiry = (expiry: string) => selectExpiry(instrumentKey, expiry);
   const refetchSnapshot = snapshotQuery.refetch;
-  const onRefresh = useCallback(() => void refetchSnapshot(), [refetchSnapshot]);
+  const onRefresh = () => void refetchSnapshot();
 
   const shownStrikes = useMemo(
     () =>
@@ -136,10 +140,10 @@ function OptionChainWorkspace({ indexCode }: { indexCode: MarketIndexCode }) {
         path={paths.optionChain(path)}
         visibility={routeVisibility.optionChain}
       />
-      <IndexHeader
+      <LiveIndexHeader
         index={index}
         status={status}
-        quote={headerQuote}
+        quote={snapshotUnderlying}
         isLoading={snapshotQuery.isPending && !snapshot}
         active="option-chain"
       />
@@ -149,6 +153,7 @@ function OptionChainWorkspace({ indexCode }: { indexCode: MarketIndexCode }) {
         selectedExpiry={activeExpiry}
         onSelectExpiry={onSelectExpiry}
         snapshot={snapshot}
+        dataAsOf={dataAsOf}
         decimals={decimals}
         isRefreshing={snapshotQuery.isFetching}
         onRefresh={onRefresh}

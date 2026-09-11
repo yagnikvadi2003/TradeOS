@@ -8,6 +8,7 @@ const tone: Record<ConnectionState, StatusTone> = {
   idle: 'faint',
   connecting: 'warn',
   connected: 'up',
+  degraded: 'warn',
   reconnecting: 'warn',
   disconnected: 'down',
   unavailable: 'faint',
@@ -26,7 +27,13 @@ export function ConnectionIndicator({ className }: { className?: string }) {
   return (
     <span
       className={cn('inline-flex items-center gap-1.5 text-xs', className)}
-      title={state === 'unavailable' ? strings.realtime.unavailableHint : undefined}
+      title={
+        state === 'unavailable'
+          ? strings.realtime.unavailableHint
+          : state === 'degraded'
+            ? strings.realtime.degradedHint
+            : undefined
+      }
       data-connection={state}
       aria-live="polite"
     >

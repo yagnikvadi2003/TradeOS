@@ -1,0 +1,106 @@
+name: backend-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      [
+        'backend/**',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+        'infrastructure/docker/Dockerfile.backend',
+        '.github/workflows/backend-ci.yml',
+      ]
+  pull_request:
+    paths:
+      [
+        'backend/**',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+        'infrastructure/docker/Dockerfile.backend',
+        '.github/workflows/backend-ci.yml',
+      ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tradeos
+          POSTGRES_PASSWORD: tradeos
+          POSTGRES_DB: tradeos
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U tradeos" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://tradeos:tradeos@localhost:5432/tradeos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tradeos/backend prisma:validate
+      # Proves the checked-in migrations match the schema and apply cleanly.
+      - run: pnpm --filter @tradeos/backend exec prisma migrate deploy
+      - run: pnpm --filter @tradeos/backend exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
+      - run: pnpm --filter @tradeos/backend typecheck
+      - run: pnpm --filter @tradeos/backend lint
+      - run: pnpm --filter @tradeos/backend format:check
+      - run: pnpm --filter @tradeos/backend test:unit
+      - run: pnpm --filter @tradeos/backend test:integration
+      - run: pnpm --filter @tradeos/backend build
+      - run: pnpm --filter @tradeos/backend openapi:export
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openapi
+          path: docs/openapi.json
+          retention-days: 14
+
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm audit --audit-level=high
+
+  docker:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile.backend
+          push: false
+          tags: tradeos-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

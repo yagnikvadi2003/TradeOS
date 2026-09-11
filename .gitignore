@@ -1,19 +1,22 @@
 node_modules/
 dist/
 build/
-
+coverage/
 .env
 .env.*
 !.env.example
 *.log
 .DS_Store
-
 .vite/
 test-results/
 playwright-report/
 !.env.development
 *.tsbuildinfo
 
+# Prisma client is generated on install (backend postinstall)
+backend/src/generated/
+
+# Lock files
 pnpm-lock.yaml
 yarn.lock
 npm-lock.json
