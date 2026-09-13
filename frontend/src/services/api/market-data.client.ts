@@ -17,7 +17,40 @@ export interface RealtimeToken {
   readonly expiresAt: number;
 }
 
-export interface MarketDataClient {
+import {
+  type Alert,
+  type AppNotification,
+  type CreateAlertInput,
+  type Preferences,
+  type Watchlist,
+} from './user-data.schemas';
+
+/** Session-owned user data (watchlists, alerts, notifications, preferences). */
+export interface UserDataClient {
+  ensureSession(signal?: AbortSignal): Promise<{ id: string; expiresAt: number }>;
+  listWatchlists(signal?: AbortSignal): Promise<Watchlist[]>;
+  createWatchlist(name: string): Promise<Watchlist>;
+  renameWatchlist(id: string, name: string): Promise<Watchlist>;
+  deleteWatchlist(id: string): Promise<void>;
+  addWatchlistItem(id: string, instrumentKey: string): Promise<Watchlist>;
+  removeWatchlistItem(id: string, instrumentKey: string): Promise<Watchlist>;
+  reorderWatchlistItems(id: string, instrumentKeys: readonly string[]): Promise<Watchlist>;
+  listAlerts(signal?: AbortSignal): Promise<Alert[]>;
+  createAlert(input: CreateAlertInput): Promise<Alert>;
+  updateAlert(
+    id: string,
+    patch: Partial<Pick<Alert, 'threshold' | 'repeat' | 'note'>> & {
+      status?: 'ACTIVE' | 'DISABLED';
+    },
+  ): Promise<Alert>;
+  deleteAlert(id: string): Promise<void>;
+  listNotifications(limit?: number, signal?: AbortSignal): Promise<AppNotification[]>;
+  markNotificationsRead(ids: readonly string[] | 'all'): Promise<number>;
+  getPreferences(signal?: AbortSignal): Promise<Preferences>;
+  setPreferences(patch: Preferences): Promise<Preferences>;
+}
+
+export interface MarketDataClient extends UserDataClient {
   readonly kind: 'http' | 'mock';
   getIndexQuotes(keys: readonly InstrumentKey[], signal?: AbortSignal): Promise<IndexQuote[]>;
   /** Short-lived session token for the market WebSocket. */

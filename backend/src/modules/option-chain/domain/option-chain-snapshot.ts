@@ -11,6 +11,8 @@ import {
 export interface OptionValueBreakdown {
   readonly intrinsic: number;
   readonly extrinsic: number | null;
+  /** ask − bid when both are available (derived). */
+  readonly spread: number | null;
 }
 
 export interface OptionLeg {
@@ -39,6 +41,25 @@ export interface OptionChainTotals {
   readonly putCallRatio: number | null;
 }
 
+/** TradeOS-derived analytics; see `option-analytics.ts`. Never provider facts. */
+export interface OptionAnalyticsSummary {
+  readonly derived: true;
+  readonly oiPcr: number | null;
+  readonly volumePcr: number | null;
+  readonly maxPain: number | null;
+  readonly atmIv: number | null;
+  readonly oiConcentration: { readonly ce: StrikeWeight[]; readonly pe: StrikeWeight[] };
+  readonly oiChangeConcentration: { readonly ce: StrikeWeight[]; readonly pe: StrikeWeight[] };
+  readonly volumeConcentration: { readonly ce: StrikeWeight[]; readonly pe: StrikeWeight[] };
+  readonly supportCandidates: number[];
+  readonly resistanceCandidates: number[];
+}
+export interface StrikeWeight {
+  readonly strike: number;
+  readonly value: number;
+  readonly share: number;
+}
+
 export interface OptionChainSnapshot {
   readonly instrumentKey: InstrumentKey;
   readonly expiry: Expiry;
@@ -48,6 +69,7 @@ export interface OptionChainSnapshot {
   readonly lotSize: number;
   readonly strikes: readonly OptionStrike[];
   readonly totals: OptionChainTotals;
+  readonly analytics: OptionAnalyticsSummary;
   /** Epoch ms the snapshot was assembled. */
   readonly asOf: number;
   /** Oldest contract update in the snapshot; drives the freshness indicator. */

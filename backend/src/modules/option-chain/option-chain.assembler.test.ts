@@ -118,9 +118,9 @@ describe('assembleOptionChain', () => {
       asOf: 2_000,
     });
     const itmCall = snapshot.strikes[0]!.ce!;
-    expect(itmCall.value).toEqual({ intrinsic: 80, extrinsic: 20 });
+    expect(itmCall.value).toMatchObject({ intrinsic: 80, extrinsic: 20 });
     const otmPut = snapshot.strikes[0]!.pe!;
-    expect(otmPut.value).toEqual({ intrinsic: 0, extrinsic: 100 });
+    expect(otmPut.value).toMatchObject({ intrinsic: 0, extrinsic: 100 });
     expect(snapshot.totals.putCallRatio).toBeNull();
   });
 

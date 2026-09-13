@@ -1,3 +1,4 @@
+import { type OptionAnalytics } from './analytics';
 import { type ExchangeCode, type InstrumentKey, type QuoteSource } from '@/features/market/domain';
 
 /**
@@ -60,6 +61,8 @@ export interface OptionMarketData {
   readonly greeks: OptionGreeks | null;
   readonly intrinsic: number;
   readonly extrinsic: number | null;
+  /** ask − bid when both quoted (derived). */
+  readonly spread: number | null;
   readonly updatedAt: number;
 }
 
@@ -107,6 +110,7 @@ export interface OptionChainSnapshot {
   readonly lotSize: number;
   readonly strikes: readonly OptionStrike[];
   readonly totals: OptionChainTotals;
+  readonly analytics: OptionAnalytics;
   readonly asOf: number;
   readonly oldestUpdateAt: number;
   readonly source: QuoteSource;

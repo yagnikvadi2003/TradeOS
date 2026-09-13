@@ -15,6 +15,8 @@ import { UpstoxAuthError } from '../websocket/upstox-feed.transport';
  *   GET /v2/option/contract?instrument_key=&expiry_date=   — contracts of an underlying
  *   GET /v2/option/chain?instrument_key=&expiry_date=      — chain with market data + greeks
  *   GET /v3/market-quote/ohlc?instrument_key=&interval=1d  — index level with day OHLC
+ *   GET /v3/historical-candle/{key}/{unit}/{interval}/{to}/{from} — history (oldest→newest after sort)
+ *   GET /v3/historical-candle/intraday/{key}/{unit}/{interval}  — current session
  */
 const num = z.number().finite();
 const optNum = num.optional();
@@ -78,6 +80,12 @@ export const upstoxOhlcQuoteSchema = z.object({
 });
 export type UpstoxOhlcQuote = z.infer<typeof upstoxOhlcQuoteSchema>;
 
+/** `[timestamp ISO+05:30, open, high, low, close, volume, oi]` */
+export const upstoxCandleRowSchema = z
+  .tuple([z.string(), num, num, num, num, num, num])
+  .rest(z.unknown());
+export type UpstoxCandleRow = z.infer<typeof upstoxCandleRowSchema>;
+
 export class UpstoxRestClient {
   constructor(
     private readonly apiBaseUrl: string,
@@ -109,6 +117,38 @@ export class UpstoxRestClient {
     );
     const expected = instrumentKey.replace('|', ':');
     return record[expected] ?? Object.values(record)[0] ?? null;
+  }
+
+  async getHistoricalCandles(
+    instrumentKey: string,
+    unit: 'minutes' | 'hours' | 'days',
+    interval: number,
+    toDate: string,
+    fromDate: string,
+  ): Promise<UpstoxCandleRow[]> {
+    const data = await this.get(
+      `/v3/historical-candle/${encodeURIComponent(instrumentKey)}/${unit}/${interval}/${toDate}/${fromDate}`,
+    );
+    return this.validate(
+      z.object({ candles: z.array(upstoxCandleRowSchema) }),
+      data,
+      'historical-candle',
+    ).candles;
+  }
+
+  async getIntradayCandles(
+    instrumentKey: string,
+    unit: 'minutes' | 'hours',
+    interval: number,
+  ): Promise<UpstoxCandleRow[]> {
+    const data = await this.get(
+      `/v3/historical-candle/intraday/${encodeURIComponent(instrumentKey)}/${unit}/${interval}`,
+    );
+    return this.validate(
+      z.object({ candles: z.array(upstoxCandleRowSchema) }),
+      data,
+      'intraday-candle',
+    ).candles;
   }
 
   private async get(path: string): Promise<unknown> {

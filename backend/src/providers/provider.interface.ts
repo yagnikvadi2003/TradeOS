@@ -4,6 +4,7 @@ import {
   type IsoDate,
   type OptionContractKey,
 } from '@/common/market/market-primitives';
+import { type CandleInterval, type CandleSeries } from '@/modules/charts/domain/candle';
 import {
   type MarketDataSource,
   type OptionContract,
@@ -41,6 +42,12 @@ export interface MarketDataProvider {
   getOptionMarketData(
     contractKeys: readonly OptionContractKey[],
   ): Promise<readonly OptionMarketData[]>;
+  /** Historical bars, oldest first, at most `count` (the newest). */
+  getCandles(
+    instrumentKey: InstrumentKey,
+    interval: CandleInterval,
+    count: number,
+  ): Promise<CandleSeries>;
 }
 
 export const MARKET_DATA_PROVIDER = Symbol('MARKET_DATA_PROVIDER');

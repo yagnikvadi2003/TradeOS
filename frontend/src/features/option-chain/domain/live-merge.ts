@@ -36,6 +36,7 @@ export function mergeLegLive(leg: OptionLeg, tick: OptionTick): OptionLeg {
       greeks: tick.greeks ?? m.greeks,
       intrinsic: m.intrinsic,
       extrinsic: ltp === null ? null : Math.round((ltp - m.intrinsic) * 100) / 100,
+      spread: bidAsk(tick.bid ?? m.bid, tick.ask ?? m.ask),
       updatedAt: tick.timestamp,
     },
   };
@@ -107,4 +108,8 @@ export function liveKeysFor(
 ): string[] {
   if (!snapshot) return [instrumentKey];
   return [instrumentKey, ...contractKeysOf(windowRows(snapshotToRows(snapshot), strikeWindow))];
+}
+
+function bidAsk(bid: number | null, ask: number | null): number | null {
+  return bid !== null && ask !== null && ask >= bid ? Math.round((ask - bid) * 100) / 100 : null;
 }

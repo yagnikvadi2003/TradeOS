@@ -48,3 +48,40 @@ export type ProviderInstrumentMapping = Prisma.ProviderInstrumentMappingModel
  * provider; rotated on every OAuth exchange. Never joined, never logged.
  */
 export type ProviderCredential = Prisma.ProviderCredentialModel
+/**
+ * Model Session
+ * Durable, device-scoped session that owns watchlists, alerts and
+ * preferences. Anonymous until the users module attaches an account.
+ */
+export type Session = Prisma.SessionModel
+/**
+ * Model Watchlist
+ * 
+ */
+export type Watchlist = Prisma.WatchlistModel
+/**
+ * Model WatchlistItem
+ * 
+ */
+export type WatchlistItem = Prisma.WatchlistItemModel
+/**
+ * Model Alert
+ * 
+ */
+export type Alert = Prisma.AlertModel
+/**
+ * Model Notification
+ * 
+ */
+export type Notification = Prisma.NotificationModel
+/**
+ * Model Preference
+ * 
+ */
+export type Preference = Prisma.PreferenceModel
+/**
+ * Model MarketCalendarDay
+ * Exchange holidays and special sessions. Operator-loaded from the official
+ * exchange circulars; nothing is guessed. Absent rows = regular schedule.
+ */
+export type MarketCalendarDay = Prisma.MarketCalendarDayModel

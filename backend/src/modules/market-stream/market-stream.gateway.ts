@@ -119,6 +119,19 @@ export class MarketStreamGateway implements OnModuleDestroy {
     return this.sessions.size;
   }
 
+  /** Deliver a control frame to every socket authenticated for `subject` (e.g. `session:<id>`). Bypasses the coalescing queues. */
+  sendToSubject(subject: string, message: ServerMessage): number {
+    let sent = 0;
+    const payload = JSON.stringify(message);
+    for (const session of this.sessions.values()) {
+      if (session.claims?.sub === subject && session.socket.readyState === WebSocket.OPEN) {
+        session.socket.send(payload);
+        sent += 1;
+      }
+    }
+    return sent;
+  }
+
   /* ------------------------------------------------------------------ */
   /* Connection admission                                                */
   /* ------------------------------------------------------------------ */

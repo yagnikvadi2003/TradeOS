@@ -7,6 +7,7 @@ import { ErrorBoundary } from '@/components/common/error-boundary';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ConnectionIndicator } from '@/components/trading/connection-indicator';
+import { NotificationsTray } from '@/features/notifications/components/notifications-tray';
 import { IstClock } from '@/components/trading/ist-clock';
 import { MarketStatusBadge } from '@/components/trading/market-status-badge';
 import { IndexTickerStrip } from '@/features/market/components/index-ticker-strip';
@@ -82,6 +83,7 @@ export function TerminalLayout() {
         </span>
 
         <div className="ml-auto flex items-center gap-4">
+          <NotificationsTray />
           <ConnectionIndicator />
           <IstClock />
         </div>

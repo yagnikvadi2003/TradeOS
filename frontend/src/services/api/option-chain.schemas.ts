@@ -55,12 +55,28 @@ const optionMarketDataDtoSchema = z.object({
     .nullable(),
   intrinsic: finite,
   extrinsic: nullableFinite,
+  spread: nullableFinite,
   updatedAt: epochMs,
 });
 
 const optionLegDtoSchema = z.object({
   contract: optionContractDtoSchema,
   market: optionMarketDataDtoSchema,
+});
+
+const strikeWeightSchema = z.object({ strike: finite, value: finite, share: finite.min(0).max(1) });
+const sidesSchema = z.object({ ce: z.array(strikeWeightSchema), pe: z.array(strikeWeightSchema) });
+export const optionAnalyticsDtoSchema = z.object({
+  derived: z.literal(true),
+  oiPcr: nullableFinite,
+  volumePcr: nullableFinite,
+  maxPain: nullableFinite,
+  atmIv: nullableFinite,
+  oiConcentration: sidesSchema,
+  oiChangeConcentration: sidesSchema,
+  volumeConcentration: sidesSchema,
+  supportCandidates: z.array(finite),
+  resistanceCandidates: z.array(finite),
 });
 
 export const optionChainSnapshotDtoSchema = z.object({
@@ -90,6 +106,7 @@ export const optionChainSnapshotDtoSchema = z.object({
       pe: optionLegDtoSchema.nullable(),
     }),
   ),
+  analytics: optionAnalyticsDtoSchema,
   totals: z.object({
     ceOpenInterest: finite,
     peOpenInterest: finite,

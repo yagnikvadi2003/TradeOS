@@ -1,3 +1,4 @@
+import { computeOptionAnalytics } from '@/features/option-chain/domain/analytics';
 import { marketCatalog } from '@/features/market/config';
 import { type InstrumentKey } from '@/features/market/domain';
 import {
@@ -292,6 +293,7 @@ function leg(
     },
     intrinsic,
     extrinsic: round(ltp - intrinsic, 2),
+    spread: round(toTick(ltp + spread, tickSize) - Math.max(toTick(ltp - spread, tickSize), 0), 2),
     updatedAt: bucket,
   };
   return { contract, market };
@@ -359,6 +361,7 @@ export function simulateSnapshot(
     strikeStep: config.step,
     lotSize: config.lotSize,
     strikes,
+    analytics: computeOptionAnalytics(strikes, atm, underlying.ltp),
     totals: {
       ...totals,
       putCallRatio:

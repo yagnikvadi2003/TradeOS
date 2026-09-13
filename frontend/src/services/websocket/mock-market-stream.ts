@@ -1,6 +1,6 @@
 import { marketCatalog } from '@/features/market/config';
 import { simulateOptionLeg, simulateUnderlying } from '@/services/api/option-chain.simulator';
-import { type MarketStream, type StreamInfo } from './market-stream';
+import { type MarketStream, type StreamInfo, type StreamNotification } from './market-stream';
 import { type MarketUpdate, type StreamKey } from './market-stream.messages';
 
 export interface MockMarketStreamOptions {
@@ -21,6 +21,7 @@ export class MockMarketStream implements MarketStream {
   private readonly refs = new Map<StreamKey, number>();
   private readonly updateListeners = new Set<(u: readonly MarketUpdate[]) => void>();
   private readonly infoListeners = new Set<(i: StreamInfo) => void>();
+  private readonly notificationListeners = new Set<(n: StreamNotification) => void>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private current: StreamInfo = {
     state: 'idle',
@@ -76,6 +77,16 @@ export class MockMarketStream implements MarketStream {
   onInfo(listener: (info: StreamInfo) => void): () => void {
     this.infoListeners.add(listener);
     return () => this.infoListeners.delete(listener);
+  }
+
+  onNotification(listener: (n: StreamNotification) => void): () => void {
+    this.notificationListeners.add(listener);
+    return () => this.notificationListeners.delete(listener);
+  }
+
+  /** Test hook: deliver a notification frame. */
+  pushNotification(n: StreamNotification): void {
+    for (const l of this.notificationListeners) l(n);
   }
 
   disconnect(): void {

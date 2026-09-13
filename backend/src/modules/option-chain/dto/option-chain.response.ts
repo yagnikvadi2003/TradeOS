@@ -60,6 +60,7 @@ export const optionMarketDataDtoSchema = z.object({
   greeks: optionGreeksDtoSchema.nullable(),
   intrinsic: finite,
   extrinsic: nullableFinite,
+  spread: nullableFinite.describe('ask − bid (derived)'),
   updatedAt: epochMs,
 });
 
@@ -89,6 +90,22 @@ export const underlyingMarketDataDtoSchema = z.object({
   source,
 });
 
+const strikeWeightSchema = z.object({ strike: finite, value: finite, share: finite.min(0).max(1) });
+const sidesSchema = z.object({ ce: z.array(strikeWeightSchema), pe: z.array(strikeWeightSchema) });
+/** TradeOS-derived analytics — `derived: true` marks them as calculations, not provider facts. */
+export const optionAnalyticsDtoSchema = z.object({
+  derived: z.literal(true),
+  oiPcr: nullableFinite.describe('PE OI / CE OI'),
+  volumePcr: nullableFinite.describe('PE volume / CE volume'),
+  maxPain: nullableFinite.describe('Strike minimising aggregate option-writer payout'),
+  atmIv: nullableFinite.describe('Mean ATM CE/PE implied volatility, percent'),
+  oiConcentration: sidesSchema,
+  oiChangeConcentration: sidesSchema,
+  volumeConcentration: sidesSchema,
+  supportCandidates: z.array(finite),
+  resistanceCandidates: z.array(finite),
+});
+
 export const optionChainSnapshotDtoSchema = z.object({
   instrumentKey: z.string().regex(INSTRUMENT_KEY_PATTERN),
   expiry: expiryDtoSchema,
@@ -104,6 +121,7 @@ export const optionChainSnapshotDtoSchema = z.object({
     peVolume: finite,
     putCallRatio: nullableFinite,
   }),
+  analytics: optionAnalyticsDtoSchema,
   asOf: epochMs,
   oldestUpdateAt: epochMs,
   source,

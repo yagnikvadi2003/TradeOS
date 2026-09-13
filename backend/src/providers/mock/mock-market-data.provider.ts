@@ -17,6 +17,11 @@ import {
   OptionChainNotSupportedError,
 } from '@/common/errors/domain-error';
 import { catalogInstrument } from '@/modules/instruments/instrument.catalog';
+import {
+  CANDLE_INTERVAL_SECONDS,
+  type CandleInterval,
+  type CandleSeries,
+} from '@/modules/charts/domain/candle';
 import { type InstrumentDefinition } from '@/modules/instruments/instrument-definition';
 import {
   type OptionContract,
@@ -195,6 +200,46 @@ export class MockMarketDataProvider implements MarketDataProvider {
       }
     }
     return contracts;
+  }
+
+  /**
+   * Deterministic random-walk bars ending at the current bar. Seeded per
+   * (instrument, interval, last bar), so the series is stable within a bar
+   * and consistent with the simulated underlying level.
+   */
+  async getCandles(
+    instrumentKey: InstrumentKey,
+    interval: CandleInterval,
+    count: number,
+  ): Promise<CandleSeries> {
+    this.guard();
+    const definition = catalogInstrument(instrumentKey);
+    if (!definition) throw new InstrumentNotFoundError(instrumentKey);
+    const step = CANDLE_INTERVAL_SECONDS[interval];
+    const nowSec = Math.floor(this.now() / 1000);
+    const lastBar = nowSec - (nowSec % step);
+    const rand = prng(hashSeed(`${instrumentKey}|candles|${interval}|${lastBar}`));
+    const anchor =
+      MOCK_INSTRUMENTS[instrumentKey]?.anchor ??
+      (definition.kind === 'VOLATILITY_INDEX' ? 14 : 1_000);
+    const decimals = definition.tickSize < 0.01 ? 4 : 2;
+    const volatility =
+      (definition.kind === 'VOLATILITY_INDEX' ? 0.08 : 0.012) * Math.sqrt(step / 86_400);
+    const candles = [];
+    let close = anchor * (0.97 + rand() * 0.06);
+    for (let i = count - 1; i >= 0; i -= 1) {
+      const open = close;
+      close = roundTo(open * (1 + (rand() - 0.5) * 2 * volatility), decimals);
+      const wick = rand() * volatility * open;
+      candles.push({
+        time: lastBar - i * step,
+        open: roundTo(open, decimals),
+        high: roundTo(Math.max(open, close) + wick, decimals),
+        low: roundTo(Math.min(open, close) - wick, decimals),
+        close,
+      });
+    }
+    return { instrumentKey, interval, candles, source: 'simulated' };
   }
 
   async getUnderlyingQuote(instrumentKey: InstrumentKey): Promise<UnderlyingMarketData> {

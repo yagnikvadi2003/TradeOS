@@ -22,6 +22,7 @@ import {
 import { UpstoxAuthController } from './upstox/auth/upstox-auth.controller';
 import { UpstoxAuthService } from './upstox/auth/upstox-auth.service';
 import { UpstoxRestClient } from './upstox/rest/upstox-rest.client';
+import { ShardedMarketFeedProvider } from './upstox/websocket/sharded-feed.provider';
 import { UpstoxMarketFeedProvider } from './upstox/websocket/upstox-feed.provider';
 import { UpstoxFeedTransport } from './upstox/websocket/upstox-feed.transport';
 import { UpstoxMarketDataProvider } from './upstox/upstox-market-data.provider';
@@ -113,27 +114,33 @@ import { loadUpstoxEnv, UPSTOX_ENV, type UpstoxEnv } from './upstox/upstox.confi
       ): MarketFeedProvider => {
         if (env.MARKET_DATA_PROVIDER === 'mock')
           return new MockMarketFeedProvider({ intervalMs: 1_000 });
-        const transport = new UpstoxFeedTransport(upstox.UPSTOX_API_BASE_URL, () =>
-          auth.getAccessToken(),
-        );
-        const feed = new UpstoxMarketFeedProvider({
-          transport,
-          symbols,
-          mode: upstox.UPSTOX_FEED_MODE,
-          maxSubscriptions: upstox.UPSTOX_MAX_SUBSCRIPTIONS,
-          connectTimeoutMs: env.FEED_CONNECT_TIMEOUT_MS,
-          staleAfterMs: env.FEED_STALE_AFTER_MS,
-          metrics,
-          logger: {
-            info: (meta, msg) => logger.log(meta, msg),
-            warn: (meta, msg) => logger.warn(meta, msg),
-            error: (meta, msg) => logger.error(meta, msg),
-          },
-        });
+        const feedLogger = {
+          info: (meta: Record<string, unknown>, msg: string) => logger.log(meta, msg),
+          warn: (meta: Record<string, unknown>, msg: string) => logger.warn(meta, msg),
+          error: (meta: Record<string, unknown>, msg: string) => logger.error(meta, msg),
+        };
+        // One shard per permitted upstream connection; keys are assigned first-fit,
+        // so a single shard is a transparent pass-through.
+        const shard = () =>
+          new UpstoxMarketFeedProvider({
+            transport: new UpstoxFeedTransport(upstox.UPSTOX_API_BASE_URL, () =>
+              auth.getAccessToken(),
+            ),
+            symbols,
+            mode: upstox.UPSTOX_FEED_MODE,
+            maxSubscriptions: upstox.UPSTOX_MAX_SUBSCRIPTIONS,
+            connectTimeoutMs: env.FEED_CONNECT_TIMEOUT_MS,
+            staleAfterMs: env.FEED_STALE_AFTER_MS,
+            metrics,
+            logger: feedLogger,
+          });
         // Option contract keys can only be subscribed once the symbol map knows them;
         // the snapshot provider loads them on first option-chain access.
         void snapshotProvider;
-        return feed;
+        return new ShardedMarketFeedProvider(
+          Array.from({ length: upstox.UPSTOX_FEED_CONNECTIONS }, shard),
+          { capacityPerShard: upstox.UPSTOX_MAX_SUBSCRIPTIONS, metrics },
+        );
       },
     },
   ],

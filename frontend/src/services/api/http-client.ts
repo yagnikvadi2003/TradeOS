@@ -34,6 +34,27 @@ export class HttpClient {
   }
 
   async get<T>(path: string, schema: ZodType<T>, signal?: AbortSignal): Promise<T> {
+    return this.request('GET', path, schema, undefined, signal);
+  }
+
+  /** Mutations carry the CSRF marker header the backend requires alongside the session cookie. */
+  async send<T>(
+    method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    path: string,
+    schema: ZodType<T>,
+    body?: unknown,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    return this.request(method, path, schema, body, signal);
+  }
+
+  private async request<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    path: string,
+    schema: ZodType<T>,
+    body: unknown,
+    signal?: AbortSignal,
+  ): Promise<T> {
     const url = `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -42,9 +63,15 @@ export class HttpClient {
 
     try {
       const response = await this.fetchImpl(url, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
+        method,
+        headers: {
+          Accept: 'application/json',
+          ...(method === 'GET'
+            ? {}
+            : { 'X-Requested-With': 'TradeOS', 'Content-Type': 'application/json' }),
+        },
         credentials: 'same-origin',
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         signal: controller.signal,
       });
       if (!response.ok) {

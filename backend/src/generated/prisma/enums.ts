@@ -48,3 +48,36 @@ export const ExpiryCycle = {
 } as const
 
 export type ExpiryCycle = (typeof ExpiryCycle)[keyof typeof ExpiryCycle]
+
+
+export const AlertCondition = {
+  PRICE_ABOVE: 'PRICE_ABOVE',
+  PRICE_BELOW: 'PRICE_BELOW',
+  CHANGE_PERCENT_ABOVE: 'CHANGE_PERCENT_ABOVE',
+  CHANGE_PERCENT_BELOW: 'CHANGE_PERCENT_BELOW',
+  VOLUME_ABOVE: 'VOLUME_ABOVE',
+  OI_CHANGE_ABOVE: 'OI_CHANGE_ABOVE',
+  IV_ABOVE: 'IV_ABOVE',
+  IV_BELOW: 'IV_BELOW',
+  PCR_ABOVE: 'PCR_ABOVE',
+  PCR_BELOW: 'PCR_BELOW'
+} as const
+
+export type AlertCondition = (typeof AlertCondition)[keyof typeof AlertCondition]
+
+
+export const AlertStatus = {
+  ACTIVE: 'ACTIVE',
+  TRIGGERED: 'TRIGGERED',
+  DISABLED: 'DISABLED'
+} as const
+
+export type AlertStatus = (typeof AlertStatus)[keyof typeof AlertStatus]
+
+
+export const CalendarDayKind = {
+  HOLIDAY: 'HOLIDAY',
+  SPECIAL_SESSION: 'SPECIAL_SESSION'
+} as const
+
+export type CalendarDayKind = (typeof CalendarDayKind)[keyof typeof CalendarDayKind]

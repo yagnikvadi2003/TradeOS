@@ -73,6 +73,16 @@ export type ServerMessage =
       readonly stale: boolean;
       readonly markets?: readonly MarketStatusUpdate[];
     }
+  /** Alert trigger for this session (additive in protocol v1; clients may ignore). */
+  | {
+      readonly type: 'notification';
+      readonly id: string;
+      readonly alertId: string | null;
+      readonly title: string;
+      readonly body: string;
+      readonly value: number | null;
+      readonly createdAt: number;
+    }
   | {
       readonly type: 'error';
       readonly code: WsErrorCode;

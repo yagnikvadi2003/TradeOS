@@ -5,6 +5,7 @@ import { Seo } from '@/components/common/seo';
 import { MarketStatusBadge } from '@/components/trading/market-status-badge';
 import { QuoteSourceBadge } from '@/components/trading/quote-source-badge';
 import { MarketOverviewTable } from '@/features/market/components/market-overview-table';
+import { WatchlistPanel } from '@/features/watchlists/components/watchlist-panel';
 import { marketCatalog } from '@/features/market/config';
 import { useIndexQuotes } from '@/features/market/hooks/use-index-quotes';
 import { useMarketStatus } from '@/features/market/hooks/use-market-status';
@@ -70,6 +71,7 @@ export function MarketsOverviewPage() {
       ) : null}
 
       <MarketOverviewTable quotes={quotes.data} isLoading={quotes.isPending} />
+      <WatchlistPanel className="mt-4" />
     </>
   );
 }

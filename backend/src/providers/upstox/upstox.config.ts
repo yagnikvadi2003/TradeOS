@@ -23,6 +23,8 @@ export const upstoxEnvSchema = z.object({
   UPSTOX_FEED_MODE: z.enum(['ltpc', 'option_greeks', 'full', 'full_d30']).default('full'),
   /** Upstream cap for the chosen mode (2000 keys for `full`, per the V3 limits table). */
   UPSTOX_MAX_SUBSCRIPTIONS: z.coerce.number().int().min(1).max(5000).default(1500),
+  /** Upstream feed connections (shards). Upstox permits 2 per credential. */
+  UPSTOX_FEED_CONNECTIONS: z.coerce.number().int().min(1).max(2).default(1),
 });
 
 export type UpstoxEnv = z.infer<typeof upstoxEnvSchema>;

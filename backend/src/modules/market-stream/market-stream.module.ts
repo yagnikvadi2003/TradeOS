@@ -21,7 +21,7 @@ import { RealtimeTokenController } from './realtime-token.controller';
       },
     },
   ],
-  exports: [MarketStreamService],
+  exports: [MarketStreamService, MarketStreamGateway, REALTIME_TOKEN_SERVICE],
 })
 export class MarketStreamModule implements OnApplicationBootstrap {
   constructor(private readonly gateway: MarketStreamGateway) {}

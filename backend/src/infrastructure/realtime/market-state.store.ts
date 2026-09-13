@@ -41,8 +41,12 @@ export class InMemoryMarketStateStore implements MarketStateStore {
     for (const update of updates) {
       const key = streamKeyOf(update);
       const existing = this.state.get(key);
-      // Out-of-order or duplicate provider events never move state backwards.
-      if (existing && existing.timestamp > update.timestamp) continue;
+      // Out-of-order events never move state backwards; an exact replay of the
+      // current state (same exchange time, same values) is a duplicate frame.
+      if (existing) {
+        if (existing.timestamp > update.timestamp) continue;
+        if (existing.timestamp === update.timestamp && sameValues(existing, update)) continue;
+      }
       this.state.set(key, update);
       applied.push(update);
     }
@@ -56,4 +60,21 @@ export class InMemoryMarketStateStore implements MarketStateStore {
   get size(): number {
     return this.state.size;
   }
+}
+
+/** Cheap value comparison for duplicate detection: every field except receipt time. */
+function sameValues(a: MarketUpdate, b: MarketUpdate): boolean {
+  if (a.kind !== b.kind) return false;
+  for (const key of Object.keys(a) as (keyof MarketUpdate)[]) {
+    if (key === 'receivedAt') continue;
+    const av = a[key];
+    const bv = b[key];
+    if (av === bv) continue;
+    if (typeof av === 'object' && av !== null && typeof bv === 'object' && bv !== null) {
+      if (JSON.stringify(av) !== JSON.stringify(bv)) return false;
+      continue;
+    }
+    return false;
+  }
+  return true;
 }

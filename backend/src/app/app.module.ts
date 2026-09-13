@@ -12,6 +12,15 @@ import { HttpMetricsInterceptor } from '@/infrastructure/observability/http-metr
 import { LoggerModule } from '@/infrastructure/logging/logger.module';
 import { RealtimeModule } from '@/infrastructure/realtime/realtime.module';
 import { RedisModule } from '@/infrastructure/redis/redis.module';
+import { AlertsModule } from '@/modules/alerts/alerts.module';
+import { ChartsModule } from '@/modules/charts/charts.module';
+import { MarketCalendarModule } from '@/modules/market-calendar/market-calendar.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
+import { PreferencesModule } from '@/modules/preferences/preferences.module';
+import { SessionModule } from '@/modules/session/session.module';
+import { UserDataModule } from '@/modules/user-data/user-data.module';
+import { WatchlistsModule } from '@/modules/watchlists/watchlists.module';
+import { InstrumentsModule } from '@/modules/instruments/instruments.module';
 import { MarketModule } from '@/modules/market/market.module';
 import { MarketStreamModule } from '@/modules/market-stream/market-stream.module';
 import { OptionChainModule } from '@/modules/option-chain/option-chain.module';
@@ -34,7 +43,16 @@ import { ProviderModule } from '@/providers/provider.module';
     }),
     OptionChainModule,
     MarketModule,
+    InstrumentsModule,
+    ChartsModule,
     MarketStreamModule,
+    UserDataModule,
+    SessionModule,
+    WatchlistsModule,
+    AlertsModule,
+    NotificationsModule,
+    PreferencesModule,
+    MarketCalendarModule,
   ],
   controllers: [HealthController, MetricsController],
   providers: [

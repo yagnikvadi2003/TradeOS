@@ -3,17 +3,28 @@ import {
   ColorType,
   CrosshairMode,
   createChart,
+  LineSeries,
   type CandlestickData,
   type IChartApi,
   type ISeriesApi,
+  type LineData,
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { useEffect, useRef } from 'react';
 import { type Candle } from '@/features/charts/domain';
 
+export interface ChartOverlay {
+  readonly id: string;
+  readonly color: string;
+  /** Aligned with `candles`; nulls leave gaps. */
+  readonly values: readonly (number | null)[];
+}
+
 interface PriceChartProps {
   candles: readonly Candle[];
   decimals: number;
+  /** Derived indicator lines drawn over price; series are created/removed by id. */
+  overlays?: readonly ChartOverlay[];
   ariaLabel: string;
   className?: string;
 }
@@ -41,7 +52,14 @@ function toSeriesData(candles: readonly Candle[]): CandlestickData<UTCTimestamp>
  * series instead of recreating the chart. Realtime bars will use
  * `series.update()` in a later phase.
  */
-export function PriceChart({ candles, decimals, ariaLabel, className }: PriceChartProps) {
+export function PriceChart({
+  candles,
+  decimals,
+  overlays = [],
+  ariaLabel,
+  className,
+}: PriceChartProps) {
+  const overlayRefs = useRef(new Map<string, ISeriesApi<'Line'>>());
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -118,6 +136,38 @@ export function PriceChart({ candles, decimals, ariaLabel, className }: PriceCha
     series.setData(toSeriesData(candles));
     chart.timeScale().fitContent();
   }, [candles]);
+
+  // Overlays: one line series per id, kept across data updates, removed when toggled off.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const wanted = new Set(overlays.map((o) => o.id));
+    for (const [id, line] of overlayRefs.current) {
+      if (!wanted.has(id)) {
+        chart.removeSeries(line);
+        overlayRefs.current.delete(id);
+      }
+    }
+    for (const overlay of overlays) {
+      let line = overlayRefs.current.get(overlay.id);
+      if (!line) {
+        line = chart.addSeries(LineSeries, {
+          color: overlay.color,
+          lineWidth: 1,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        overlayRefs.current.set(overlay.id, line);
+      }
+      const data: LineData<UTCTimestamp>[] = [];
+      overlay.values.forEach((v, i) => {
+        const c = candles[i];
+        if (v !== null && c) data.push({ time: c.time as UTCTimestamp, value: v });
+      });
+      line.setData(data);
+    }
+  }, [overlays, candles]);
 
   return (
     <div

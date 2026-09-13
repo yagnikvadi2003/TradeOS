@@ -33,8 +33,18 @@ export interface StreamInfo {
  * the client too: ten components watching NIFTY 50 produce one subscribe
  * frame, and the last one to leave produces one unsubscribe frame.
  */
+export interface StreamNotification {
+  readonly id: string;
+  readonly alertId: string | null;
+  readonly title: string;
+  readonly body: string;
+  readonly value: number | null;
+  readonly createdAt: number;
+}
+
 export interface MarketStream {
   readonly kind: 'ws' | 'mock';
+  onNotification(listener: (n: StreamNotification) => void): () => void;
   readonly info: StreamInfo;
   /** Retain keys; returns a release function. Connects lazily on first retain. */
   subscribe(keys: readonly StreamKey[]): () => void;
@@ -86,6 +96,7 @@ export class WsMarketStream implements MarketStream {
   private flushQueued = false;
   private readonly updateListeners = new Set<(u: readonly MarketUpdate[]) => void>();
   private readonly infoListeners = new Set<(i: StreamInfo) => void>();
+  private readonly notificationListeners = new Set<(n: StreamNotification) => void>();
   private current: StreamInfo = {
     state: 'idle',
     reconnectAttempt: 0,
@@ -161,6 +172,11 @@ export class WsMarketStream implements MarketStream {
   onInfo(listener: (info: StreamInfo) => void): () => void {
     this.infoListeners.add(listener);
     return () => this.infoListeners.delete(listener);
+  }
+
+  onNotification(listener: (n: StreamNotification) => void): () => void {
+    this.notificationListeners.add(listener);
+    return () => this.notificationListeners.delete(listener);
   }
 
   disconnect(): void {
@@ -261,6 +277,11 @@ export class WsMarketStream implements MarketStream {
           stale,
           state: this.authenticated ? (stale ? 'degraded' : 'connected') : this.current.state,
         });
+        return;
+      }
+      case 'notification': {
+        const { type: _t, ...n } = message;
+        for (const l of this.notificationListeners) l(n);
         return;
       }
       case 'error':

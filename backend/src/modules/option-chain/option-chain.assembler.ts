@@ -1,3 +1,4 @@
+import { computeOptionAnalytics } from './option-analytics';
 import { type InstrumentKey } from '@/common/market/market-primitives';
 import {
   type Expiry,
@@ -44,7 +45,11 @@ function intrinsicOf(contract: OptionContract, level: number): number {
 function leg(contract: OptionContract, market: OptionMarketData, level: number): OptionLeg {
   const intrinsic = intrinsicOf(contract, level);
   const extrinsic = market.ltp === null ? null : Math.round((market.ltp - intrinsic) * 100) / 100;
-  return { contract, market, value: { intrinsic, extrinsic } };
+  const spread =
+    market.bid !== null && market.ask !== null && market.ask >= market.bid
+      ? Math.round((market.ask - market.bid) * 100) / 100
+      : null;
+  return { contract, market, value: { intrinsic, extrinsic, spread } };
 }
 
 /** Placeholder market row when the provider returned nothing for a listed contract. */
@@ -139,6 +144,7 @@ export function assembleOptionChain(input: AssembleInput): OptionChainSnapshot {
     lotSize: input.lotSize,
     strikes,
     totals: chainTotals,
+    analytics: computeOptionAnalytics(strikes, atmStrike, underlying.ltp),
     asOf: input.asOf,
     oldestUpdateAt: anyData ? oldestUpdateAt : input.asOf,
     source: underlying.source,

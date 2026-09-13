@@ -1,6 +1,6 @@
 {
   "name": "@tradeos/backend",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "private": true,
   "description": "TradeOS backend — NestJS REST API, option-chain domain, provider abstraction",
   "scripts": {
@@ -23,7 +23,8 @@
     "test:coverage": "vitest run --coverage",
     "prisma:studio": "prisma studio",
     "prisma:validate": "prisma validate",
-    "openapi:export": "node scripts/export-openapi.cjs"
+    "openapi:export": "node scripts/export-openapi.cjs",
+    "bench:fanout": "tsx scripts/bench-fanout.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.3",

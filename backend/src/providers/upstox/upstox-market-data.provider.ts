@@ -3,6 +3,7 @@ import {
   type IsoDate,
   type OptionContractKey,
   parseOptionContractKey,
+  istIsoDate,
 } from '@/common/market/market-primitives';
 import {
   InstrumentNotFoundError,
@@ -11,12 +12,19 @@ import {
 import { type MarketStateStore } from '@/infrastructure/realtime/market-state.store';
 import { catalogInstrument } from '@/modules/instruments/instrument.catalog';
 import {
+  CANDLE_INTERVAL_SECONDS,
+  type Candle,
+  type CandleInterval,
+  type CandleSeries,
+} from '@/modules/charts/domain/candle';
+import {
   type OptionContract,
   type OptionMarketData,
   type UnderlyingMarketData,
 } from '@/modules/option-chain/domain';
 import { type MarketDataProvider, type ProviderExpiry } from '../provider.interface';
 import {
+  type UpstoxCandleRow,
   type UpstoxChainLeg,
   type UpstoxContract,
   type UpstoxRestClient,
@@ -27,6 +35,14 @@ import {
   UPSTOX_INDEX_KEYS,
   type UpstoxSymbolMap,
 } from './mappers/upstox-symbol-map';
+
+const CANDLE_UNITS: Record<CandleInterval, { unit: 'minutes' | 'hours' | 'days'; size: number }> = {
+  '1m': { unit: 'minutes', size: 1 },
+  '5m': { unit: 'minutes', size: 5 },
+  '15m': { unit: 'minutes', size: 15 },
+  '1h': { unit: 'hours', size: 1 },
+  '1d': { unit: 'days', size: 1 },
+};
 
 function nn(value: number | undefined): number | null {
   return value !== undefined && Number.isFinite(value) && value >= 0 ? value : null;
@@ -112,6 +128,57 @@ export class UpstoxMarketDataProvider implements MarketDataProvider {
   ): Promise<readonly OptionContract[]> {
     const contracts = await this.ensureContracts(instrumentKey);
     return contracts.filter((c) => c.expiryDate === expiryDate);
+  }
+
+  /**
+   * History = V3 historical (past sessions, within the documented retrieval
+   * window for the unit) + V3 intraday (current session), merged and
+   * de-duplicated by bar time. Two calls per (instrument, interval) per cache
+   * period; indexes carry no volume so it is omitted rather than reported as 0.
+   */
+  async getCandles(
+    instrumentKey: InstrumentKey,
+    interval: CandleInterval,
+    count: number,
+  ): Promise<CandleSeries> {
+    const definition = catalogInstrument(instrumentKey);
+    if (!definition) throw new InstrumentNotFoundError(instrumentKey);
+    const upstoxKey = UPSTOX_INDEX_KEYS[instrumentKey];
+    if (!upstoxKey) throw new InstrumentNotFoundError(instrumentKey);
+    const { unit, size } = CANDLE_UNITS[interval];
+    const today = istIsoDate(this.now());
+    // Days of history needed: bars × seconds / (6.25 h session), bounded by Upstox's retrieval window.
+    const sessionSeconds = 6.25 * 3_600;
+    const barsPerDay =
+      unit === 'days'
+        ? 1
+        : Math.max(1, Math.floor(sessionSeconds / CANDLE_INTERVAL_SECONDS[interval]));
+    const calendarDays = Math.min(
+      unit === 'days'
+        ? Math.ceil((count / 250) * 365) + 7
+        : Math.ceil((count / barsPerDay) * 1.6) + 3,
+      unit === 'minutes' && size <= 15 ? 30 : unit === 'days' ? 3_650 : 90,
+    );
+    const from = istIsoDate(this.now() - calendarDays * 86_400_000);
+    const rows: UpstoxCandleRow[] = [];
+    const settled = await Promise.allSettled([
+      this.rest.getHistoricalCandles(upstoxKey, unit, size, today, from),
+      unit === 'days'
+        ? Promise.resolve([] as UpstoxCandleRow[])
+        : this.rest.getIntradayCandles(upstoxKey, unit, size),
+    ]);
+    for (const result of settled) if (result.status === 'fulfilled') rows.push(...result.value);
+    if (settled.every((r) => r.status === 'rejected'))
+      throw (settled[0] as PromiseRejectedResult).reason as Error;
+    const byTime = new Map<number, Candle>();
+    for (const row of rows) {
+      const time = Math.floor(Date.parse(row[0]) / 1000);
+      if (!Number.isFinite(time)) continue;
+      const candle: Candle = { time, open: row[1], high: row[2], low: row[3], close: row[4] };
+      byTime.set(time, row[5] > 0 ? { ...candle, volume: row[5] } : candle);
+    }
+    const candles = [...byTime.values()].sort((a, b) => a.time - b.time).slice(-count);
+    return { instrumentKey, interval, candles, source: 'snapshot' };
   }
 
   async getUnderlyingQuote(instrumentKey: InstrumentKey): Promise<UnderlyingMarketData> {

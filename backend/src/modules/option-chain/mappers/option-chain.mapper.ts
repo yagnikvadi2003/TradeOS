@@ -64,6 +64,7 @@ export function toOptionLegDto(leg: OptionLeg): OptionLegDto {
         : null,
       intrinsic: value.intrinsic,
       extrinsic: value.extrinsic,
+      spread: value.spread,
       updatedAt: market.updatedAt,
     },
   };
@@ -85,6 +86,23 @@ export function toSnapshotDto(snapshot: OptionChainSnapshot): OptionChainSnapsho
       pe: s.pe ? toOptionLegDto(s.pe) : null,
     })),
     totals: { ...snapshot.totals },
+    analytics: {
+      ...snapshot.analytics,
+      oiConcentration: {
+        ce: [...snapshot.analytics.oiConcentration.ce],
+        pe: [...snapshot.analytics.oiConcentration.pe],
+      },
+      oiChangeConcentration: {
+        ce: [...snapshot.analytics.oiChangeConcentration.ce],
+        pe: [...snapshot.analytics.oiChangeConcentration.pe],
+      },
+      volumeConcentration: {
+        ce: [...snapshot.analytics.volumeConcentration.ce],
+        pe: [...snapshot.analytics.volumeConcentration.pe],
+      },
+      supportCandidates: [...snapshot.analytics.supportCandidates],
+      resistanceCandidates: [...snapshot.analytics.resistanceCandidates],
+    },
     asOf: snapshot.asOf,
     oldestUpdateAt: snapshot.oldestUpdateAt,
     source: snapshot.source,

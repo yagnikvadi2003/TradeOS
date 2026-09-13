@@ -2,6 +2,54 @@
 
 All notable changes to TradeOS are documented here. The format follows Keep a Changelog.
 
+## [0.7.0] — Product features + production audit
+
+### Added
+
+- Device sessions (`GET/DELETE /api/v1/session`): HttpOnly SameSite cookie, HMAC-signed id, sliding
+  30-day expiry, CSRF via required `X-Requested-With` header; session-bound stream tokens.
+- Watchlists (`/api/v1/watchlists`), alerts (`/api/v1/alerts`, 10 conditions, server-evaluated
+  through the gateway with reference-counted subscriptions), notifications (`/api/v1/notifications`
+  - live `notification` WebSocket frame), preferences (`/api/v1/preferences`), market calendar
+    (`/api/v1/market-calendar`, operator-loaded holidays). Prisma models + migration
+    `20260912000000_sessions_watchlists_alerts`; in-memory repository without a database.
+- Frontend: watchlist panel on the overview (live rows, keyboard reorder), alerts panel on index
+  pages, notifications tray with unread badge and browser-notification opt-in, chart overlays
+  (SMA 20, EMA 50, Bollinger 20) backed by a tested indicator library (SMA/EMA/RSI/MACD/BB/ATR/VWAP).
+- `docs/architecture/phase-6-product-and-audit.md`: the ten audits, verification evidence,
+  deployment research and the production-readiness score.
+
+### Not implemented (documented)
+
+- Futures (Upstox endpoint not verified this phase); RSI/MACD/ATR chart panes.
+
+## [0.6.0] — Market data, option analytics, realtime hardening
+
+### Added
+
+- `GET /api/v1/charts/:instrument/candles` — historical OHLC (1m/5m/15m/1h/1d) with per-bar caching
+  and in-flight coalescing; Upstox V3 historical + intraday candle APIs (doc-verified) merged and
+  de-duplicated; deterministic simulator bars. Fixes the chart panel in `http` mode.
+- `GET /api/v1/instruments` — supported instruments with capability flags (INDIA VIX: no option chain).
+- Option analytics, server-side and tagged `derived: true`: OI PCR, volume PCR, max pain, ATM IV,
+  OI/ΔOI/volume concentration, support/resistance candidates; per-leg bid–ask `spread`. Frontend
+  analytics strip labelled "Derived"; simulator twin keeps mock snapshots shape-identical.
+- Provider simulator fault modes on the mock feed: malformed payload, duplicate frame, stale data,
+  delayed data, burst, silence (DEGRADED), heartbeat timeout, disconnect/reconnect — with a
+  scenario test suite pinning the pipeline's behaviour for each.
+- `ShardedMarketFeedProvider`: deliberate sharding of upstream subscriptions across the permitted
+  Upstox connections (`UPSTOX_FEED_CONNECTIONS`, 1–2), first-fit by capacity, worst-shard state
+  surfaced so a dead socket is never masked.
+- `pnpm --filter @tradeos/backend bench:fanout` throughput check for the router.
+
+### Changed
+
+- Market state store treats an exact replay (same exchange time, same values) as a duplicate frame:
+  no re-fanout.
+- `connection_status.stale` is true for every non-CONNECTED provider state.
+- Coalescing queue overwrites in place (one Map op instead of delete+set): router throughput
+  35k → 78k updates/s at 200 clients × 300 keys on the benchmark host.
+
 ## [0.5.0] — Engineering foundation
 
 ### Added

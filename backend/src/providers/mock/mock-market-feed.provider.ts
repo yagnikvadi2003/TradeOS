@@ -103,11 +103,83 @@ export class MockMarketFeedProvider implements MarketFeedProvider {
     return () => this.statusListeners.delete(listener);
   }
 
-  /** Test hook: simulate the upstream dropping the socket. */
+  /* ------------------------------------------------------------------ */
+  /* Provider simulator — fault injection for automated tests.            */
+  /* Every hook mirrors a failure a real feed can produce; none of them    */
+  /* exist in the production code path.                                   */
+  /* ------------------------------------------------------------------ */
+
+  /** Upstream drops the socket → RECONNECTING. */
   simulateDisconnect(): void {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
-    this.machine.transition('RECONNECTING');
+    if (this.machine.is('CONNECTED') || this.machine.is('DEGRADED'))
+      this.machine.transition('RECONNECTING');
+  }
+
+  /** Reconnect after a simulated disconnect (or silence): back to CONNECTED. */
+  simulateReconnect(): void {
+    if (this.machine.is('RECONNECTING')) {
+      this.machine.transition('CONNECTING');
+      this.machine.transition('AUTHENTICATING');
+      this.machine.transition('CONNECTED');
+    } else if (this.machine.is('DEGRADED')) {
+      this.machine.transition('CONNECTED');
+    }
+    if (!this.manual && !this.timer)
+      this.timer = setInterval(() => void this.tick(), this.intervalMs);
+  }
+
+  /** Feed goes silent past the stale threshold → DEGRADED (heartbeat timeout precursor). */
+  simulateSilence(): void {
+    if (this.machine.is('CONNECTED')) this.machine.transition('DEGRADED');
+  }
+
+  /** Heartbeat timeout: silence escalates to a forced reconnect. */
+  simulateHeartbeatTimeout(): void {
+    this.simulateSilence();
+    if (this.machine.is('DEGRADED')) this.machine.transition('RECONNECTING');
+  }
+
+  /** Emit raw objects as if the adapter had produced them (malformed payload injection). */
+  emitRaw(updates: readonly unknown[]): void {
+    if (!this.machine.is('CONNECTED')) return;
+    for (const l of this.updateListeners) l(updates as MarketUpdate[]);
+  }
+
+  /** The same batch delivered twice (provider replay / duplicate frame). */
+  async simulateDuplicate(): Promise<void> {
+    const updates = await this.generate();
+    for (const l of this.updateListeners) l(updates);
+    for (const l of this.updateListeners) l(updates);
+  }
+
+  /** Updates whose timestamps are older than what was already delivered. */
+  async simulateStale(ageMs = 60_000): Promise<void> {
+    const updates = (await this.generate()).map((u) => ({ ...u, timestamp: u.timestamp - ageMs }));
+    for (const l of this.updateListeners) l(updates);
+  }
+
+  /** Data that arrives late: exchange timestamp far behind receipt time. */
+  async simulateDelayed(delayMs = 5_000): Promise<void> {
+    const updates = (await this.generate()).map((u) => ({
+      ...u,
+      receivedAt: u.receivedAt + delayMs,
+    }));
+    for (const l of this.updateListeners) l(updates);
+  }
+
+  /** Burst: `count` consecutive batches with monotonically newer timestamps, no yield between them. */
+  async simulateBurst(count: number): Promise<void> {
+    const base = await this.generate();
+    for (let i = 0; i < count; i += 1) {
+      const updates = base.map((u) => ({
+        ...u,
+        timestamp: u.timestamp + i + 1,
+        receivedAt: u.receivedAt + i + 1,
+      }));
+      for (const l of this.updateListeners) l(updates);
+    }
   }
 
   /** Test hook: emit one batch for every subscribed key (or inject raw updates). */

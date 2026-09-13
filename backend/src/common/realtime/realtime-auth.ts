@@ -25,6 +25,11 @@ export class RealtimeTokenService {
     if (secret.length < 32) throw new Error('realtime token secret must be at least 32 characters');
   }
 
+  /** Same trust domain as stream tokens; used to sign the session cookie. */
+  get secretForSessions(): string {
+    return this.secret;
+  }
+
   static generateSecret(): string {
     return randomBytes(48).toString('base64url');
   }

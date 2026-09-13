@@ -12,7 +12,12 @@ import {
   type OptionChainMetadata,
   type OptionChainSnapshot,
 } from '@/features/option-chain/domain';
-import { type MarketDataClient, type RealtimeToken } from './market-data.client';
+import {
+  type MarketDataClient,
+  type RealtimeToken,
+  type UserDataClient,
+} from './market-data.client';
+import { MockUserDataClient } from './mock-user-data.client';
 import { SIM_CONFIG, simulateExpiries, simulateSnapshot } from './option-chain.simulator';
 
 /**
@@ -71,6 +76,29 @@ export interface MockMarketDataOptions {
 }
 
 export class MockMarketDataClient implements MarketDataClient {
+  readonly userData = new MockUserDataClient();
+  ensureSession: UserDataClient['ensureSession'] = () => this.userData.ensureSession();
+  listWatchlists: UserDataClient['listWatchlists'] = () => this.userData.listWatchlists();
+  createWatchlist: UserDataClient['createWatchlist'] = (n) => this.userData.createWatchlist(n);
+  renameWatchlist: UserDataClient['renameWatchlist'] = (i, n) =>
+    this.userData.renameWatchlist(i, n);
+  deleteWatchlist: UserDataClient['deleteWatchlist'] = (i) => this.userData.deleteWatchlist(i);
+  addWatchlistItem: UserDataClient['addWatchlistItem'] = (i, k) =>
+    this.userData.addWatchlistItem(i, k);
+  removeWatchlistItem: UserDataClient['removeWatchlistItem'] = (i, k) =>
+    this.userData.removeWatchlistItem(i, k);
+  reorderWatchlistItems: UserDataClient['reorderWatchlistItems'] = (i, k) =>
+    this.userData.reorderWatchlistItems(i, k);
+  listAlerts: UserDataClient['listAlerts'] = () => this.userData.listAlerts();
+  createAlert: UserDataClient['createAlert'] = (i) => this.userData.createAlert(i);
+  updateAlert: UserDataClient['updateAlert'] = (i, p) => this.userData.updateAlert(i, p);
+  deleteAlert: UserDataClient['deleteAlert'] = (i) => this.userData.deleteAlert(i);
+  listNotifications: UserDataClient['listNotifications'] = (l) =>
+    this.userData.listNotifications(l);
+  markNotificationsRead: UserDataClient['markNotificationsRead'] = (i) =>
+    this.userData.markNotificationsRead(i);
+  getPreferences: UserDataClient['getPreferences'] = () => this.userData.getPreferences();
+  setPreferences: UserDataClient['setPreferences'] = (p) => this.userData.setPreferences(p);
   readonly kind = 'mock' as const;
   private readonly now: () => number;
   private readonly latencyMs: number;

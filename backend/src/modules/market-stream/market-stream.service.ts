@@ -91,7 +91,7 @@ export class MarketStreamService implements OnModuleInit, OnModuleDestroy {
       this.bus.subscribe<DemandMessage>(CHANNELS.demand, (msg) => this.onRemoteDemand(msg)),
       this.feed.onUpdates((updates) => this.onFeedUpdates(updates)),
       this.feed.onStateChange((change) => {
-        this.stale = change.state === 'DEGRADED' || change.state === 'RECONNECTING';
+        this.stale = change.state !== 'CONNECTED';
         if (change.state === 'DEGRADED') this.metrics.inc('staleDataEvents');
         void this.bus.publish<StatusMessage>(CHANNELS.status, {
           provider: change.state,

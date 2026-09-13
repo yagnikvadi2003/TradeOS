@@ -16,6 +16,7 @@ import {
   useOptionChainStore,
 } from '@/stores/option-chain.store';
 import { AtmIndicator } from './atm-indicator';
+import { OptionAnalyticsStrip } from './option-analytics-strip';
 import { ConnectionStatus } from './connection-status';
 import { DataFreshnessIndicator } from './data-freshness-indicator';
 import { ExpirySelector } from './expiry-selector';
@@ -68,6 +69,11 @@ export function OptionChainToolbar({
         </div>
         {snapshot ? <AtmIndicator snapshot={snapshot} decimals={decimals} /> : null}
       </div>
+      {snapshot ? (
+        <div className="border-t border-line px-4 py-1 sm:px-5">
+          <OptionAnalyticsStrip analytics={snapshot.analytics} />
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line px-4 py-1.5 sm:px-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <Segmented<StrikeWindow>

@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { Controller, Get, Header, Inject } from '@nestjs/common';
+import { Controller, Get, Header, Inject, Req } from '@nestjs/common';
+import { type Request } from 'express';
+import { SessionService } from '@/modules/session/session.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { ApiStandardErrors, ApiZodResponse } from '@/common/openapi/zod-openapi';
@@ -21,6 +23,7 @@ export class RealtimeTokenController {
   constructor(
     @Inject(REALTIME_TOKEN_SERVICE) private readonly tokens: RealtimeTokenService,
     @Inject(APP_ENV) private readonly env: AppEnv,
+    private readonly sessions: SessionService,
   ) {}
 
   @Get('token')
@@ -44,7 +47,15 @@ export class RealtimeTokenController {
     example: { data: { token: 'eyJ…', expiresAt: 1789000000000, path: '/ws/market' } },
   })
   @ApiStandardErrors(429)
-  issue(): { data: { token: string; expiresAt: number; path: string } } {
+  async issue(
+    @Req() req: Request,
+  ): Promise<{ data: { token: string; expiresAt: number; path: string } }> {
+    // Session-bound when the device cookie is present (enables alert push); anonymous otherwise.
+    const session = await this.sessions.resolve(req);
+    if (session) {
+      const issued = this.sessions.issueStreamToken(session);
+      return { data: { ...issued, path: WS_PATH } };
+    }
     const { token, claims } = this.tokens.issue(
       `anon:${randomUUID()}`,
       this.env.REALTIME_TOKEN_TTL_SECONDS,

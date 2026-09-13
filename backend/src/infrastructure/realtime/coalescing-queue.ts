@@ -30,9 +30,14 @@ export class CoalescingQueue<T> {
 
   push(key: string, value: T): void {
     if (this.pending.has(key)) {
+      // Overwrite in place: one Map op instead of delete+set. Position no longer
+      // reflects recency, but eviction is by *first-seen* key, which is the right
+      // victim anyway (the key that has been waiting longest for a flush).
       this.coalescedCount += 1;
-      this.pending.delete(key); // re-insert at the tail: newest state goes out last-but-once
-    } else if (this.pending.size >= this.maxKeys) {
+      this.pending.set(key, value);
+      return;
+    }
+    if (this.pending.size >= this.maxKeys) {
       const oldest = this.pending.keys().next().value;
       if (oldest !== undefined) {
         this.pending.delete(oldest);

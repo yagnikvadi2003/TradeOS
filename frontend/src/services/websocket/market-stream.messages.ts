@@ -146,6 +146,15 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('heartbeat'), serverTime: num, sentAt: num.optional() }),
   z.object({ type: z.literal('connection_status'), provider: providerState, stale: z.boolean() }),
   z.object({
+    type: z.literal('notification'),
+    id: z.string(),
+    alertId: z.string().nullable(),
+    title: z.string(),
+    body: z.string(),
+    value: num.nullable(),
+    createdAt: num,
+  }),
+  z.object({
     type: z.literal('error'),
     code: z.string(),
     message: z.string(),

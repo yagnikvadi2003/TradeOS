@@ -15,8 +15,3 @@ playwright-report/
 
 # Prisma client is generated on install (backend postinstall)
 backend/src/generated/
-
-# Lock files
-pnpm-lock.yaml
-yarn.lock
-npm-lock.json

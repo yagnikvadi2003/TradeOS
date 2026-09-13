@@ -116,6 +116,7 @@ describe('OptionChainService', () => {
       listExpiries: () => Promise.resolve([{ expiryDate: '15-09-2026', cycle: 'WEEKLY' }]),
       listOptionContracts: (k, e) => base.listOptionContracts(k, e),
       getUnderlyingQuote: (k) => base.getUnderlyingQuote(k),
+      getCandles: (k, i, c) => base.getCandles(k, i, c),
       getOptionMarketData: (k) => base.getOptionMarketData(k),
     };
     const bad = build({ provider: evil });

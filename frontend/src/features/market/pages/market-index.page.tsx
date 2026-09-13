@@ -8,6 +8,7 @@ import { ChartPanel } from '@/features/charts/components/chart-panel';
 import { IndexHeader } from '@/features/market/components/index-header';
 import { marketCatalog } from '@/features/market/config';
 import { type MarketIndexCode } from '@/features/market/domain';
+import { AlertsPanel } from '@/features/alerts/components/alerts-panel';
 import { useLiveIndexQuote } from '@/features/market/hooks/use-live-index-quote';
 import { useMarketStatus } from '@/features/market/hooks/use-market-status';
 import { strings } from '@/lib/strings';
@@ -73,6 +74,11 @@ function MarketIndexWorkspace({ indexCode }: { indexCode: MarketIndexCode }) {
         />
       ) : null}
       <ChartPanel index={index} />
+      <AlertsPanel
+        instrumentKey={index.instrumentKey}
+        hasOptionChain={index.capabilities.hasOptionChain}
+        className="border-t border-line p-4 sm:p-5"
+      />
     </div>
   );
 }

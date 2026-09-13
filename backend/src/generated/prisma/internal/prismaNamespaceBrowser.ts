@@ -55,7 +55,14 @@ export const ModelName = {
   Expiry: 'Expiry',
   OptionInstrument: 'OptionInstrument',
   ProviderInstrumentMapping: 'ProviderInstrumentMapping',
-  ProviderCredential: 'ProviderCredential'
+  ProviderCredential: 'ProviderCredential',
+  Session: 'Session',
+  Watchlist: 'Watchlist',
+  WatchlistItem: 'WatchlistItem',
+  Alert: 'Alert',
+  Notification: 'Notification',
+  Preference: 'Preference',
+  MarketCalendarDay: 'MarketCalendarDay'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -154,12 +161,109 @@ export const ProviderCredentialScalarFieldEnum = {
 export type ProviderCredentialScalarFieldEnum = (typeof ProviderCredentialScalarFieldEnum)[keyof typeof ProviderCredentialScalarFieldEnum]
 
 
+export const SessionScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  lastSeenAt: 'lastSeenAt',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
+
+
+export const WatchlistScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  name: 'name',
+  position: 'position',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WatchlistScalarFieldEnum = (typeof WatchlistScalarFieldEnum)[keyof typeof WatchlistScalarFieldEnum]
+
+
+export const WatchlistItemScalarFieldEnum = {
+  id: 'id',
+  watchlistId: 'watchlistId',
+  instrumentKey: 'instrumentKey',
+  position: 'position',
+  createdAt: 'createdAt'
+} as const
+
+export type WatchlistItemScalarFieldEnum = (typeof WatchlistItemScalarFieldEnum)[keyof typeof WatchlistItemScalarFieldEnum]
+
+
+export const AlertScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  instrumentKey: 'instrumentKey',
+  condition: 'condition',
+  threshold: 'threshold',
+  status: 'status',
+  repeat: 'repeat',
+  note: 'note',
+  triggeredAt: 'triggeredAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AlertScalarFieldEnum = (typeof AlertScalarFieldEnum)[keyof typeof AlertScalarFieldEnum]
+
+
+export const NotificationScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  alertId: 'alertId',
+  title: 'title',
+  body: 'body',
+  value: 'value',
+  readAt: 'readAt',
+  createdAt: 'createdAt'
+} as const
+
+export type NotificationScalarFieldEnum = (typeof NotificationScalarFieldEnum)[keyof typeof NotificationScalarFieldEnum]
+
+
+export const PreferenceScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  key: 'key',
+  value: 'value',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PreferenceScalarFieldEnum = (typeof PreferenceScalarFieldEnum)[keyof typeof PreferenceScalarFieldEnum]
+
+
+export const MarketCalendarDayScalarFieldEnum = {
+  id: 'id',
+  exchangeCode: 'exchangeCode',
+  date: 'date',
+  kind: 'kind',
+  description: 'description',
+  openMinutes: 'openMinutes',
+  closeMinutes: 'closeMinutes',
+  createdAt: 'createdAt'
+} as const
+
+export type MarketCalendarDayScalarFieldEnum = (typeof MarketCalendarDayScalarFieldEnum)[keyof typeof MarketCalendarDayScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -176,4 +280,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
