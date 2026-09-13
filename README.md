@@ -15,6 +15,11 @@ exposes an option chain.
 | 4     | Hardening: performance audit, security review, SEO, observability, deploy | done  |
 | 5     | Users/auth module, session-issued stream tokens, live Upstox soak         | next  |
 
+## Resuming work
+
+Start with `docs/HANDOVER.md`: what exists, how it is verified, the conventions, and the
+ordered backlog.
+
 ## Getting started
 
 ```bash
